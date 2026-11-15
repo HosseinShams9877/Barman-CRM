@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build
+.next/
+out/
+coverage/
+
+# env
+.env
+.env.*
+!.env.example
+
+# misc
+*.log
+.DS_Store
+next-env.d.ts
+
+# database (فاز ۲)
+*.db
+*.db-journal
+prisma/migrations/dev.db*
+
+# editor
+.vscode/
+.idea/

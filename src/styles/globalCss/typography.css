@@ -1,0 +1,82 @@
+/* typography.css — مقیاس تایپوگرافی
+ *
+ * موبایل‌اول: فونت پایه ۱۶px در xs و ۱۵px در sm (جلوگیری از zoom iOS)،
+ * ۱۴px از md به بالا (طبق RESPONSIVE_ARCHITECTURE.md §۶.۳).
+ */
+
+html {
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+@media (min-width: 480px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* مقیاس تایپوگرافی سیال با clamp */
+.h1,
+h1 {
+  font-size: clamp(1.25rem, 1rem + 1.6vw, 1.75rem);
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.h2,
+h2 {
+  font-size: clamp(1.125rem, 0.95rem + 0.9vw, 1.375rem);
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.h3,
+h3 {
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.125rem);
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-sm {
+  font-size: 0.857rem;
+}
+
+.text-lg {
+  font-size: 1.143rem;
+}
+
+.text-numeric {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* محتوای لاتین (کد، شماره انگلیسی) داخل بلوک فارسی */
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}

@@ -1,0 +1,1038 @@
+// Prisma schema — فاز ۲ (CD-04 / DATABASE_ARCHITECTURE §۲)
+//
+// ارائه‌دهنده: SQLite برای توسعه و آزمون؛ PostgreSQL برای تولید.
+// هیچ قابلیت production-only که روی SQLite بشکند استفاده نشده است:
+//   - enum نیست (SQLite از enum پشتیبانی نمی‌کند) → جدول lookup نقش‌ها
+//   - لیست اسکالر نیست → JSON برای رنگ‌ها/آیتم‌ها (در هر دو DB پشتیبانی می‌شود)
+//   - BigInt برای زمان‌ها (UTC ms طبق CD-07) که در هر دو DB عدد صحیح ۶۴ بیتی است
+//
+// جداول(this فایل):
+//   فاز ۲: کاربران، نقش‌ها، تنظیمات، rev، مراجع کاتالوگ
+//   فاز ۳ (PHASE_03 §۶): accounts، account_phones، account_contacts،
+//          leads، lead_followups، lead_interest
+//   فاز ۶ (PHASE_06 §۶): buys، buy_items، buy_cheques، buy_status_log، txns
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // توسعه/آزمون: sqlite — تولید: postgresql
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// کاربران سامانه — منبع: meta.users / USERS0 در Demo
+model User {
+  id String @id @default(cuid())
+
+  /// نام کامل کاربر (یکتا — معادل شناسه ورود)
+  name String @unique
+
+  /// عنوان سازمانی، مثلاً «مدیر فروش»
+  title String @default("") @map("title")
+
+  /// کاربر غیرفعال (u.off در Demo — از فهرست‌ها و ورود فیلتر می‌شود)
+  off Boolean @default(false) @map("off")
+
+  // --- احراز هویت (D-01) ---
+  /// هش رمز عبور. پیشوند $2 نشان‌دهنده bcrypt است؛ در غیر این صورت
+  /// هش legacy از نوع scrypt (سازگاری مهاجرت — D-01) و passwordSalt پر است.
+  passwordHash String? @map("password_hash")
+
+  /// نمک هش legacy (فقط برای رکوردهای scrypt از Demo).
+  passwordSalt String? @map("password_salt")
+
+  /// نسخه نشست — با تغییر/null شدن، همه توکن‌های امضاشده بی‌اعتبار می‌شوند.
+  sessionVersion Int @default(0) @map("session_version")
+
+  // --- همزمانی خوش‌بینانه (R-06) ---
+  /// شماره بازنگری رکورد — هر به‌روزرسانی یک واحد افزایش می‌یابد.
+  rev Int @default(0)
+
+  /// زمان ساخت به‌صورت UTC میلی‌ثانیه (CD-07).
+  createdAt BigInt @default(0) @map("created_at")
+
+  /// زمان آخرین تغییر به‌صورت UTC میلی‌ثانیه (CD-07 / R-06).
+  updatedAt BigInt @default(0) @map("updated_at")
+
+  roles            UserRole[]
+  leads            Lead[]
+  ordersAsOwner    Order[]         @relation("OrderOwner")
+  ordersAsCreator  Order[]         @relation("OrderCreator")
+  orderPayments    OrderPayment[]
+  orderStageLog    OrderStageLog[]
+  moves            Move[]
+  jobsCreated      Job[]
+  buysCreated      Buy[]           @relation("BuyCreator")
+  buyStatusLog     BuyStatusLog[]
+  txnsCreated      Txn[]
+
+  @@map("users")
+}
+
+/// ۷ نقش ثابت Demo — کلیدها دقیقاً مطابق app/core.js هستند.
+model Role {
+  /// کلید نقش: management | admin | finance | salesManager | sales | production | depot
+  key String @id
+
+  /// برچسب فارسی نقش
+  name String
+
+  users UserRole[]
+
+  @@map("roles")
+}
+
+/// جدول پیوند چندبه‌چند کاربر↔نقش (Demo: meta.users.role)
+model UserRole {
+  userId  String @map("user_id")
+  roleKey String @map("role_key")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleKey], references: [key], onDelete: Cascade)
+
+  @@id([userId, roleKey])
+  @@index([roleKey])
+  @@map("user_roles")
+}
+
+/// ردیف تنظیمات — تنها یک ردیف (id = 0) مجاز است.
+/// منبع: meta.settings در Demo.
+model Setting {
+  id Int @id @default(0)
+
+  /// درصد مالیات بر ارزش افزوده (Demo: settings.vat)
+  vat Int @default(0)
+
+  /// اعتبار پیش‌فاکتور به روز (Demo: settings.validDays)
+  validDays Int @default(0) @map("valid_days")
+
+  /// ضریب دستمزد/قیمت (Demo: settings.rate)
+  rate Int @default(0)
+
+  /// سقف تخفیف به تفکیک نقش (Demo: settings.discountCap)
+  /// ساختار: { sales: 3, salesManager: 8, management: 100, finance: 0 }
+  discountCap Json @map("discount_cap")
+
+  /// اطلاعات شرکت (Demo: settings.company)
+  /// ساختار: { name, en, tagline, phone, address, bale }
+  company Json
+
+  /// زمان آخرین تغییر به‌صورت UTC میلی‌ثانیه.
+  updatedAt BigInt @default(0) @map("updated_at")
+
+  rev Int @default(0)
+
+  @@map("settings")
+}
+
+/// شماره بازنگری سراسری (R-06) — برای موجودیت‌هایی که ردیف مستقل ندارند.
+/// یک ردیف با key = "global" به‌صورت پیش‌فرض در seed ساخته می‌شود.
+model Rev {
+  key String @id
+
+  /// مقدار فعلی شماره بازنگری — هر به‌روزرسانی موفق یک واحد افزایش می‌یابد.
+  value Int @default(0)
+
+  updatedAt BigInt @default(0) @map("updated_at")
+
+  @@map("rev")
+}
+
+/// کاتالوگ محصولات — منبع: meta.cat.products در Demo
+model Product {
+  id String @id @default(cuid())
+
+  /// کد محصول، مثلاً BR-101 (یکتا)
+  code String @unique
+
+  name String
+
+  /// خط محصول: "prod" (تولید داخل) یا "agency" (نمایندگی)
+  line String
+
+  /// دسته‌بندی فارسی، مثلاً «پنل سه‌بعدی گچی»
+  category String @map("cat")
+
+  /// واحد شمارش، مثلاً «مترمربع»
+  unit String
+
+  /// قیمت پایه به ریال (عدد صحیح — مبالغ اعشاری نداریم)
+  price Int
+
+  /// فعال/غیرفعال
+  active Boolean @default(true)
+
+  /// مدت زمان تولید به روز (محصولات تولید داخل)
+  days Int @default(0)
+
+  /// تأمین‌کننده محصول‌های نمایندگی (اختیاری)
+  supplierId String? @map("supplier_id")
+
+  /// فهرست رنگ‌های موجود (Demo: colors[]) — JSON برای سازگاری SQLite
+  colors Json @default("[]")
+
+  createdAt BigInt @default(0) @map("created_at")
+  updatedAt BigInt @default(0) @map("updated_at")
+  rev       Int    @default(0)
+
+  bom      BomItem[]
+  supplier Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  interest LeadInterest[]
+  orderItems OrderItem[]
+  jobs      Job[]
+
+  @@map("products")
+}
+
+/// مواد خام — منبع: meta.cat.materials در Demo
+model Material {
+  id String @id @default(cuid())
+
+  /// کد ماده، مثلاً RM-101 (یکتا)
+  code String @unique
+
+  name String
+
+  /// واحد شمارش، مثلاً «کیلو»
+  unit String
+
+  /// قیمت پایه به ریال
+  price Int
+
+  /// حداقل موجودی هشدار (Demo: min)
+  min Int @default(0)
+
+  createdAt BigInt @default(0) @map("created_at")
+  updatedAt BigInt @default(0) @map("updated_at")
+  rev       Int    @default(0)
+
+  bom BomItem[]
+  buyItems BuyItem[]
+
+  @@map("materials")
+}
+
+/// آیتم درخت BOM — منبع: product.bom در Demo (رابطه محصول↔ماده)
+model BomItem {
+  id String @id @default(cuid())
+
+  productId  String @map("product_id")
+  materialId String @map("material_id")
+
+  /// مقدار مصرف به ازای یک واحد محصول
+  qty Float
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, materialId])
+  @@index([materialId])
+  @@map("bom")
+}
+
+/// تأمینکنندگان — منبع: meta.cat.suppliers در Demo
+model Supplier {
+  id String @id @default(cuid())
+
+  name String
+
+  /// نوع: "raw" (مواد اولیه) یا "agency" (نمایندگی)
+  kind String
+
+  /// تلفن تماس
+  phone String @default("")
+
+  /// شرایط پرداخت، مثلاً «چک ۳۰ روزه»
+  terms String @default("")
+
+  /// فهرست شناسه‌های محصول/ماده تأمین‌شده (Demo: items[])
+  items Json @default("[]")
+
+  createdAt BigInt @default(0) @map("created_at")
+  updatedAt BigInt @default(0) @map("updated_at")
+  rev       Int    @default(0)
+
+  products Product[]
+  buys     Buy[]
+
+  @@map("suppliers")
+}
+
+/// فهرست‌های ثابت کسب‌کار — منبع: meta.lists در Demo
+/// هر ردیف یک کلید (مثلاً "sources") و فهرستی از مقدار‌های فارسی است.
+model List {
+  id String @id @default(cuid())
+
+  /// کلید فهرست: sources | roles | results | lost | projects | channels | waste
+  key String @unique
+
+  /// فهرست مقادیر فارسی
+  items Json @default("[]")
+
+  updatedAt BigInt @default(0) @map("updated_at")
+  rev       Int    @default(0)
+
+  @@map("lists")
+}
+
+// ---------------------------------------------------------------------------
+// فاز ۳ — CRM (PHASE_03 §۶)
+// ---------------------------------------------------------------------------
+
+/// حساب‌های مشتری — منبع: app/order.js (accounts) / lead-core.js:57
+/// شناسه با پیشوند AC- و شمارنده صعودی (Demo: X.nextId("AC") از ۱۰۱).
+model Account {
+  /// شناسه قابل خواندن توسط انسان: AC-101, AC-102, …
+  id String @id
+
+  /// نام حساب (شخص یا شرکت)
+  name String
+
+  /// نوع حساب: "company" | "person" | "unknown"
+  /// unknown = شماره‌ای که فقط یک بار تماس گرفته شده و هنوز شناخته نشده
+  /// (app/lead-core.js:57: kind: o.name ? (o.kind||"person") : "unknown")
+  kind String @default("unknown")
+
+  /// فعال/غیرفعال (غیرفعال از فهرست‌ها فیلتر می‌شود)
+  active Boolean @default(true)
+
+  /// نشانی
+  address String @default("")
+
+  /// یادداشت آزاد
+  note String @default("")
+
+  /// زمان ساخت به‌صورت UTC میلی‌ثانیه (CD-07)
+  createdAt BigInt @default(0) @map("created_at")
+
+  /// زمان آخرین تغییر به‌صورت UTC میلی‌ثانیه (CD-07)
+  updatedAt BigInt @default(0) @map("updated_at")
+
+  phones   AccountPhone[]
+  contacts AccountContact[]
+  leads    Lead[]
+  orders   Order[]
+
+  @@index([active])
+  @@map("accounts")
+}
+
+/// تلفن‌های چندگانه حساب — منبع: account.phones[] در Demo (app/order.js)
+/// هر تلفن یک «نوع» دارد (مثلاً دفتر / موبایل / کارخانه).
+model AccountPhone {
+  id String @id @default(cuid())
+
+  accountId String @map("account_id")
+
+  /// نوع تلفن — مقادیر مجاز در modules/customers/constants/phone-kinds.ts
+  kind String @default("")
+
+  /// شماره نرمالایزشده (۱۱ رقم، آغاز با ۰ — app/lead-core.js:54 normPhone)
+  number String
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, number])
+  @@index([accountId])
+  @@map("account_phones")
+}
+
+/// مخاطبین حساب — منبع: account.contacts[] در Demo (app/order.js)
+/// هر مخاطب نام، سمت و تلفن مستقل دارد.
+model AccountContact {
+  id String @id @default(cuid())
+
+  accountId String @map("account_id")
+
+  /// نام مخاطب
+  name String
+
+  /// سمت سازمانی، مثلاً «مدیر خرید»
+  role String @default("")
+
+  /// تلفن مستقیم مخاطب
+  phone String @default("")
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  orders Order[]
+
+  @@index([accountId])
+  @@map("account_contacts")
+}
+
+/// سرنخ فروش — منبع: app/leads.js / app/lead-core.js
+/// دو خط محصول: "prod" (تولید داخل) و "agency" (نمایندگی).
+/// پنج مرحله: raw (خام) → opp (فرصت) → pf (پیش‌فاکتور) → won (برد) / lost (باخت).
+model Lead {
+  /// شناسه قابل خواندن توسط انسان: LD-1001, LD-1002, …
+  id String @id
+
+  /// حساب مرتبط (برای سرنخ‌های بدون حساب شناخته‌شده می‌تواند null باشد)
+  accountId String? @map("account_id")
+
+  /// خط سرنخ: "prod" | "agency" (Demo: o.line || "prod" — app/lead-core.js:61)
+  line String @default("prod")
+
+  /// مرحله: "raw" | "opp" | "pf" | "won" | "lost"
+  stage String @default("raw")
+
+  /// عنوان سرنخ (نام پروژه/نیاز)
+  title String @default("")
+
+  /// مبلغ تخمینی به ریال (عدد صحیح غیرمنفی؛ گردکردن ۱۰۰ هزار تومانی rnd
+  /// مخصوص خطوط سفارش است و در فاز ۴ پیاده‌سازی می‌شود — R-08). nullable.
+  amount Int?
+
+  /// مالک (کارشناس فروش) — رابطه به users
+  ownerId String? @map("owner_id")
+
+  /// منبع سرنخ — یکی از مقادیر لیست "sources" (Demo: o.src)
+  source String @default("")
+
+  /// یادداشت آزاد
+  note String @default("")
+
+  /// دلیل از دست رفتن — فقط زمانی که stage = "lost" (Demo: ld.lostWhy)
+  lostReason String? @map("lost_reason")
+
+  /// مرحله‌ای که سرنخ از آن به lost منتقل شده — برای «بازگرداندن»
+  /// (Demo: ld.lostFrom — app/leads.js:475)
+  lostFrom String? @map("lost_from")
+
+  createdAt BigInt @default(0) @map("created_at")
+
+  /// آخرین تغییر (هر move این فیلد را به‌روزرسانی می‌کند — app/lead-core.js:72)
+  updatedAt BigInt @default(0) @map("updated_at")
+
+  account   Account?       @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  owner     User?          @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  followups LeadFollowup[]
+  interest  LeadInterest[]
+  orders    Order[]
+
+  @@index([line, stage])
+  @@index([ownerId])
+  @@index([accountId])
+  @@map("leads")
+}
+
+/// تاریخچه پیگیری سرنخ — منبع: ld.hist[] / ld.next در Demo (app/lead-core.js:48,72)
+/// هر رکورد یک رویداد است: ثبت پیگیری («چی شد؟»)، جابه‌جایی مرحله،
+/// ورود اولیه، یا از دست رفتن.
+model LeadFollowup {
+  id String @id @default(cuid())
+
+  leadId String @map("lead_id")
+
+  /// مهر زمانی رویداد به‌صورت UTC میلی‌ثانیه (CD-07 / PHASE_03 §۹)
+  at BigInt
+
+  /// نوع رویداد: "in" (ورود) | "stage" (جابه‌جایی مرحله) | "note" (پیگیری) | "lost"
+  /// مطابق kinds در Demo hist (app/lead-core.js:60,73 و leads.js:475)
+  kind String @default("note")
+
+  /// نتیجه تماس — یکی از مقادیر لیست "results" در Demo (hist.result)
+  result String @default("")
+
+  /// توضیح آزاد رویداد
+  note String @default("")
+
+  /// تاریخ پیگیری بعدی با قالب YYYY/MM/DD با ارقام ASCII (PHASE_03 §۹)
+  nextAt String? @map("next_at")
+
+  /// ثبت‌کننده رویداد
+  byUserId String? @map("by_user_id")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, at])
+  @@map("lead_followups")
+}
+
+/// محصولات مورد علاقه سرنخ — منبع: lead.interest[] در Demo (app/lead-core.js)
+model LeadInterest {
+  leadId String @map("lead_id")
+
+  productId String @map("product_id")
+
+  lead    Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, productId])
+  @@index([productId])
+  @@map("lead_interest")
+}
+
+// ---------------------------------------------------------------------------
+// فاز ۴ — خط لوله فروش (PHASE_04 §۶)
+// ---------------------------------------------------------------------------
+
+/// پیش‌فاکتور/سفارش — منبع: app/order.js.
+/// شناسه قابل خواندن: PF-1201, PF-1202, … (Demo: X.nextId("PF")، SEQ0 core.js:364).
+/// مبلغ کل (sub/disc/vat/total) مثل Demo محاسبه می‌شود، نه ذخیره‌شده (CD-29).
+model Order {
+  /// شناسه قابل خواندن توسط انسان: PF-1201, …
+  id String @id
+
+  /// حساب مشتری (اختیاری — سفارش می‌تواند پیش از ایجاد حساب ثبت شود)
+  accountId String? @map("account_id")
+
+  /// مخاطب اصلی سفارش (Demo: o.contact)
+  contactId String? @map("contact_id")
+
+  /// سرنخ مبدأ — تبدیل سرنخ به پیش‌فاکتور (app/leads.js)
+  leadId String? @map("lead_id")
+
+  /// خط محصول: "prod" (تولید داخل) | "agency" (نمایندگی)
+  line String @default("prod")
+
+  /// مرحله خط لوله ۱..۱۱ (orderStage.ts — core.js:156-168)
+  stage Int @default(1)
+
+  /// وضعیت: "open" (در جریان) | "done" (تسویه/بسته) | "cancelled" (لغو)
+  /// Demo دو پرچم closed/cancelled دارد — در اینجا یک فیلد وضعیت (Q-11: حفظ هر دو حالت).
+  status String @default("open")
+
+  /// درصد تخفیف کل ۰..۱۰۰ — اعمال سقف سه‌حالته در سرور (CD-25)
+  discPct Int @default(0) @map("disc_pct")
+
+  /// مبلغ تخفیف ثابت به ریال (علاوه بر درصد — calc(o) order.js:231)
+  discAmt Int @default(0) @map("disc_amt")
+
+  /// هزینه حمل به ریال (calc(o))
+  ship Int @default(0)
+
+  /// هزینه نصب/اجراء به ریال (calc(o))
+  install Int @default(0)
+
+  /// بدون مالیات (true → vat صفر — calc(o))
+  noVat Boolean @default(false) @map("no_vat")
+
+  /// اعتبار پیش‌فاکتور به روز (Demo: S.validDays || 3 — order.js:19-20)
+  validDays Int @default(3) @map("valid_days")
+
+  /// یادداشت آزاد
+  note String @default("")
+
+  /// پیش‌تنظیم برنامه پرداخت استفاده‌شده: "full" | "half" | "3chq" | "deliv" | ""
+  /// (PRESETS — order.js:109-114)
+  preset String @default("")
+
+  /// مراحل پرش‌شده ۶/۷/۸ (Demo finalize: o.skipped — order.js:470-471)
+  skipped Json @default("[]")
+
+  /// پارامترهای مولد برنامه پرداخت سفارشی {pre, preMode, preAmt, rest, n, gap, first}
+  /// زمانی که preset خالی است (genPlan — order.js:118-132)
+  planBuilder Json? @map("plan_builder")
+
+  /// یادداشت بازگشت برای اصلاح {by, t, text} (data-rvgo — order.js)
+  backNote Json? @map("back_note")
+
+  /// تأیید فروشنده {by, t} (smOk — Demo)
+  smOk Json? @map("sm_ok")
+
+  /// تأیید مدیر {by, t} (mgrOk — Demo)
+  mgrOk Json? @map("mgr_ok")
+
+  /// سررسید نهایی به UTC ms (CD-07)
+  due BigInt @default(0)
+
+  /// زمان آخرین تغییر مرحله به UTC ms
+  stageAt BigInt @default(0) @map("stage_at")
+
+  /// مهرهای زمانی هر مرحله {stage: t} (Demo: o.times).
+  /// نکته: nullable است، چون SQLite از DEFAULT {} پشتیبانی نمی‌کند؛
+  /// مقدار پیش‌فرض {} در سرویس اعمال می‌شود.
+  times Json?
+
+  /// ارسال پیش‌فاکتور {via, at} (data-sendnow — order.js)
+  sent Json?
+
+  /// برنامه و وضعیت تولید {start, end, acceptedAt, startedAt, note, qc}
+  /// (Demo: o.prod — order.js:719-747). Nullable: فقط سفارش‌های تولیدی.
+  prod Json?
+
+  /// آماده‌سازی بار {t, by, packs, checks, note} (Demo: o.prep — order.js:762)
+  prep Json?
+
+  /// تحویل به مشتری {t, to, by} (Demo: o.delivered — order.js:573-576)
+  delivered Json?
+
+  /// توافق مشتری در قطعی‌سازی {by, t, how, note, diff} (Demo: o.agreed — order.js:452-472)
+  agreed Json?
+
+  /// دلیل لغو (canCancel — order.js:59)
+  cancelReason String? @map("cancel_reason")
+
+  /// مالک سفارش (کارشناس فروش)
+  ownerId String? @map("owner_id")
+
+  /// ایجادکننده سفارش
+  createdById String? @map("created_by_id")
+
+  /// زمان ساخت به‌صورت UTC میلی‌ثانیه (CD-07)
+  createdAt BigInt @default(0) @map("created_at")
+
+  /// زمان آخرین تغییر به UTC میلی‌ثانیه (CD-07 / R-06)
+  updatedAt BigInt @default(0) @map("updated_at")
+
+  account   Account?       @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contact   AccountContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead      Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  owner     User?          @relation("OrderOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdBy User?          @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  items    OrderItem[]
+  payments OrderPayment[]
+  cheques  OrderCheque[]
+  stageLog OrderStageLog[]
+  handoffs OrderHandoff[]
+
+  @@index([accountId])
+  @@index([leadId])
+  @@index([ownerId])
+  @@index([stage, status])
+  @@map("orders")
+}
+
+/// اقلام سفارش — منبع: o.items[] در Demo (app/order.js).
+model OrderItem {
+  id String @id @default(cuid())
+
+  orderId String @map("order_id")
+
+  /// محصول سفارش‌داده‌شده
+  productId String @map("product_id")
+
+  /// تعداد/مقدار بر اساس واحد محصول
+  qty Int
+
+  /// قیمت واحد به ریال در زمان ثبت (عدد صحیح — بدون اعشار)
+  price Int
+
+  /// درصد تخفیف این قلم (PHASE_04 §۶ — پیش‌فرض ۰، معادل رفتار Demo)
+  discount Int @default(0)
+
+  /// رنگ انتخابی (Demo: it.color — از products.colors)
+  color String @default("")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+/// پرداخت‌های دریافتی — منبع: o.pay[] در Demo (KIND: cash/card — order.js).
+/// چک‌های دریافتی در جدول جداگانه order_cheques ثبت می‌شوند.
+model OrderPayment {
+  id String @id @default(cuid())
+
+  orderId String @map("order_id")
+
+  /// نوع پرداخت: "cash" (نقد/واریز) | "card" (کارتی)
+  kind String
+
+  /// مبلغ به ریال (عدد صحیح مثبت)
+  amount Int
+
+  /// تاریخ پرداخت با قالب YYYY/MM/DD و ارقام ASCII (CD-06)
+  date String
+
+  /// باطل‌شده (حذف نرم — Demo: p.void)
+  void Boolean @default(false)
+
+  /// یادداشت
+  note String @default("")
+
+  /// ثبت‌کننده
+  byUserId String? @map("by_user_id")
+
+  /// زمان ثبت به UTC ms
+  createdAt BigInt @default(0) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  by    User? @relation(fields: [byUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_payments")
+}
+
+/// چک‌های دریافتی — منبع: o.chq[] در Demo (app/order.js / app/fin.js).
+model OrderCheque {
+  id String @id @default(cuid())
+
+  orderId String @map("order_id")
+
+  /// شماره صیادی — دقیقاً ۱۶ رقم (SAYAD_LENGTH).
+  /// خالی = چک ناقص طبق Demo (Q-06: اختیاری با نشان هشدار).
+  sayad String @default("")
+
+  /// مبلغ به ریال (عدد صحیح مثبت)
+  amount Int
+
+  /// سررسید با قالب YYYY/MM/DD و ارقام ASCII (CD-06)
+  due String
+
+  /// وضعیت: "hand" (نزد ما) | "bank" (در بانک) | "clear" (وصول‌شده) | "bounce" (برگشتی)
+  status String @default("hand")
+
+  /// بانک صادرکننده (۱۸ بانک — core.js:770)
+  bank String @default("")
+
+  /// دارنده چک (شخص/شرکت در وجه)
+  owner String @default("")
+
+  /// یادداشت
+  note String @default("")
+
+  /// زمان ثبت به UTC ms
+  createdAt BigInt @default(0) @map("created_at")
+
+  /// زمان آخرین تغییر به UTC ms
+  updatedAt BigInt @default(0) @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_cheques")
+}
+
+/// تاریخچه انتقال مراحل — منبع: o.log[] در Demo (log(o,text,who,t) — core.js:172).
+model OrderStageLog {
+  id String @id @default(cuid())
+
+  orderId String @map("order_id")
+
+  /// مرحله مبدأ (برای ورود اولیه null)
+  fromStage Int? @map("from_stage")
+
+  /// مرحله مقصد
+  toStage Int @map("to_stage")
+
+  /// زمان انتقال به UTC ms
+  at BigInt
+
+  /// انجام‌دهنده انتقال
+  byUserId String? @map("by_user_id")
+
+  /// یادداشت انتقال (دلیل پرش، دلیل بازگشت و غیره)
+  note String @default("")
+
+  /// نوع انتقال: "stage" | "back" | "skip" | "cancel" | "done"
+  kind String @default("stage")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  by    User? @relation(fields: [byUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, at])
+  @@map("order_stage_log")
+}
+
+/// سند تحویل TR- — منبع: handoff در Demo (data-qcok — order.js).
+/// حرکت‌های انبار (mv*) در فاز ۵ به این سند متصل می‌شوند (PHASE_04 §۳.۶).
+model OrderHandoff {
+  /// شناسه قابل خواندن: TR-1201, … (Demo: "TR-"+o.id.slice(3))
+  id String @id
+
+  orderId String @map("order_id")
+
+  /// اقلام تحویلی [{productId, qty, color}] — JSON برای سازگاری SQLite
+  lines Json
+
+  /// زمان تحویل به UTC ms
+  at BigInt
+
+  /// ثبت‌کننده
+  byUserId String? @map("by_user_id")
+
+  /// یادداشت
+  note String @default("")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_handoffs")
+}
+
+/// حرکت‌های انبار — تنها منبع حقیقت موجودی (CD-08 / PHASE_05 §۶).
+///
+/// هیچ فیلد موجودی ذخیره نمی‌شود — موجودی همیشه از جمع جبری `qty`
+/// محاسبه می‌شود. ۹ نوع حرکت مطابق Demo (app/stock.js:14):
+///   open | buy | prod | sale | use | out | adj | waste | job
+///
+/// `wh`: "raw" (مواد خام) یا "depot" (دپوی محصول آماده).
+/// `item`: شناسه محصول (depot) یا ماده خام (raw).
+/// `qty`: مقدار علامت‌دار — مثبت = ورود، منفی = خروج.
+/// `ref`: شناسه سند مسبب (PF-… سفارش، PJ-… کار تولید) — برای حرکت‌های
+///        سیستمی پر شده و برای حرکت‌های دستی خالی است.
+/// `at`: زمان حرکت به UTC ms (CD-07).
+model Move {
+  /// شناسه تصادفی مطابق Demo: "mv" + base36(timestamp) + تصادفی (core.js:110)
+  id String @id
+
+  /// انبار: "raw" | "depot"
+  wh String
+
+  /// شناسه محصول (depot) یا ماده خام (raw)
+  item String
+
+  /// مقدار علامت‌دار — مجموع آن موجودی را می‌دهد
+  qty Float
+
+  /// نوع حرکت — یکی از ۹ کلید MOVE_KINDS
+  kind String
+
+  /// شناسه سند مسبب (PF-… / PJ-…) — خالی برای حرکت‌های دستی
+  ref String?
+
+  /// زمان حرکت به UTC ms
+  at BigInt
+
+  /// ثبت‌کننده حرکت (خالی برای حرکت‌های سیستمی قبل از کاربر)
+  byUserId String? @map("by_user_id")
+
+  /// یادداشت
+  note String @default("")
+
+  by User? @relation(fields: [byUserId], references: [id], onDelete: SetNull)
+
+  @@index([wh, item])
+  @@index([kind])
+  @@index([ref])
+  @@map("moves")
+}
+
+/// کار تولید — منبع: jobs در Demo (app/prod.js — PJ-…).
+///
+/// چرخه وضعیت‌ها (PHASE_05 §۳): plan → run → qc → done.
+/// `bomSnapshot` لیست اقلام BOM را در زمان ایجاد کار ذخیره می‌کند
+/// (پیش‌نمایش زنده — مقدار مصرف به ازای کل qty).
+/// `good`/`waste` در ثبت QC نوشته می‌شوند (good + waste ≤ qty).
+model Job {
+  /// شناسه قابل خواندن: PJ-501, … (Demo: X.nextId("PJ") — core.js:364)
+  id String @id
+
+  /// محصول غایب این کار
+  productId String @map("product_id")
+
+  /// تعداد/مقدار تولید — مثبت
+  qty Float
+
+  /// رنگ انتخابی از رنگ‌های محصول (اختیاری)
+  color String?
+
+  /// تاریخ پایان برنامه‌ریزی‌شده (UTC ms — Demo jnew `end`)
+  end BigInt?
+
+  /// وضعیت: plan | run | qc | sent | done (PHASE_05 §۶)
+  status String
+
+  /// تعداد تولید سالم — ثبت QC
+  good Float?
+
+  /// تعداد ضایعات — ثبت QC (good + waste ≤ qty)
+  waste Float?
+
+  /// زمان شروع کار (انتقال به run)
+  startedAt BigInt? @map("started_at")
+
+  /// زمان ثبت QC
+  qcAt BigInt?
+
+  /// تعداد دریافت‌شده در دپو (receive — معمولاً برابر good)
+  recvQty Float? @map("recv_qty")
+
+  /// زمان ورود به دپو
+  recvAt BigInt?
+
+  /// پیش‌نمایش BOM در زمان ایجاد [{materialId, code, name, unit, qty, total}]
+  bomSnapshot Json
+
+  /// ایجادکننده کار
+  createdBy String @map("created_by")
+
+  createdAt BigInt @map("created_at")
+  updatedAt BigInt @map("updated_at")
+
+  product  Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  creator  User    @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([productId])
+  @@map("jobs")
+}
+
+/// خرید — منبع: buys در Demo (app/buy.js — BY-…).
+///
+/// چرخه وضعیت‌ها (PHASE_06 §۶): req → ok → fin → recv.
+///   req  : پیش‌فاکتور خرید — فقط در این وضعیت قابل ویرایش است.
+///   ok   : تأیید شده (approve) — نیاز مجوز purchasing.approve.
+///   fin  : تأمین مالی شده — چک‌ها صادر و ثبت می‌شوند.
+///   recv : دریافت شده — حرکت‌های ورود `buy` به انبار raw ایجاد می‌کند.
+///
+/// `total`: مبلغ کل خرید به ریال (مجموع اقلام) — عدد صحیح (CD-13).
+/// `rev`: همزمانی خوش‌بینانه (R-06) — در هر به‌روزرسانی یک واحد افزایش می‌یابد.
+model Buy {
+  /// شناسه قابل خواندن: BY-101, … (Demo: X.nextId("BY"))
+  id String @id
+
+  /// تأمین‌کننده (اختیاری — Demo امکان خرید بدون تأمین‌کننده را می‌دهد)
+  supplierId String? @map("supplier_id")
+
+  /// وضعیت: req | ok | fin | recv
+  status String @default("req")
+
+  /// مبلغ کل خرید به ریال — مجموع qty × price اقلام
+  total Int @default(0)
+
+  /// یادداشت خرید
+  note String?
+
+  /// ایجادکننده خرید
+  createdBy String @map("created_by")
+
+  createdAt BigInt @map("created_at")
+  updatedAt BigInt @map("updated_at")
+
+  /// شماره بازنگری — همزمانی خوش‌بینانه (PHASE_06 §۳)
+  rev Int @default(0)
+
+  supplier   Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  creator    User           @relation("BuyCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  items      BuyItem[]
+  cheques    BuyCheque[]
+  statusLog  BuyStatusLog[]
+
+  @@index([status])
+  @@index([supplierId])
+  @@map("buys")
+}
+
+/// قلم خرید — منبع: buy.lines در Demo.
+/// `materialId` به کاتالوگ مواد خام اشاره دارد (خرید همیشه raw است — PHASE_06 §۳).
+model BuyItem {
+  id String @id @default(cuid())
+
+  buyId String @map("buy_id")
+
+  /// ماده خام خریداری‌شده
+  materialId String @map("material_id")
+
+  /// مقدار خرید — مثبت
+  qty Float
+
+  /// قیمت واحد به ریال — عدد صحیح
+  price Int
+
+  buy      Buy      @relation(fields: [buyId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  @@index([buyId])
+  @@index([materialId])
+  @@map("buy_items")
+}
+
+/// چک خرید — منبع: buy.pays[].chq در Demo (app/buy.js:231).
+/// `status`: issued (صادر شده) → paid (پرداخت/تسویه شده).
+/// `due`: تاریخ سررسید به صورت `YYYY/MM/DD` با ارقام ASCII (CD-06).
+/// `sayad`: شماره صیادی (اختیاری — رشته‌ی ۱۶ رقمی طبق قواعد Demo).
+model BuyCheque {
+  id String @id @default(cuid())
+
+  buyId String @map("buy_id")
+
+  /// مبلغ چک به ریال — عدد صحیح مثبت
+  amount Int
+
+  /// تاریخ سررسید — `YYYY/MM/DD` ASCII (core/calendar اعتبارسنجی می‌شود)
+  due String
+
+  /// شماره صیادی (اختیاری)
+  sayad String?
+
+  /// issued | paid
+  status String @default("issued")
+
+  buy Buy @relation(fields: [buyId], references: [id], onDelete: Cascade)
+
+  @@index([buyId])
+  @@index([status])
+  @@map("buy_cheques")
+}
+
+/// تاریخچه تغییرات وضعیت خرید — منبع: buy.st در Demo.
+/// مشابه OrderStageLog در فاز ۴.
+model BuyStatusLog {
+  id String @id @default(cuid())
+
+  buyId String @map("buy_id")
+
+  /// وضعیت قبلی — null برای ایجاد
+  fromStatus String? @map("from_status")
+
+  /// وضعیت جدید
+  toStatus String @map("to_status")
+
+  /// زمان تغییر به UTC ms (CD-07)
+  at BigInt
+
+  /// انجام‌دهنده تغییر
+  byUserId String? @map("by_user_id")
+
+  /// یادداشت رویداد — متن ورودی log خرید در Demo (app/fin-core.js:35)
+  note String?
+
+  buy Buy  @relation(fields: [buyId], references: [id], onDelete: Cascade)
+  by  User? @relation(fields: [byUserId], references: [id], onDelete: SetNull)
+
+  @@index([buyId])
+  @@map("buy_status_log")
+}
+
+/// تراکنش مالی — منبع: txns در Demo (app/fin.js:145).
+///
+/// `kind`: یکی از ۸ گزینه ثابت Demo (TXN_KINDS):
+///   ۷ نوع هزینه («هزینه: حقوق پرسنل»، …، «هزینه: سایر») + «دریافت متفرقه».
+/// `direction`: expense | income — از کلید kind استنتاج می‌شود
+///   (شروع با «دریافت» = income، در غیر این صورت expense).
+/// `at`: تاریخ تراکنش به صورت `YYYY/MM/DD` با ارقام ASCII (CD-06).
+/// Q-14: تراکنش‌ها در پایگاه داده ذخیره می‌شوند (تصمیم مالک — DECISION_LOG).
+model Txn {
+  id String @id @default(cuid())
+
+  /// کلید ثابت نوع تراکنش (یکی از TXN_KINDS)
+  kind String
+
+  /// expense | income
+  direction String
+
+  /// مبلغ به ریال — عدد صحیح مثبت
+  amount Int
+
+  /// تاریخ تراکنش — `YYYY/MM/DD` ASCII
+  at String
+
+  /// طرف مقابل (اختیاری — Demo: who)
+  who String?
+
+  /// یادداشت (اختیاری)
+  note String?
+
+  /// ثبت‌کننده تراکنش
+  byUserId String? @map("by_user_id")
+
+  /// زمان ثبت رکورد به UTC ms (CD-07)
+  createdAt BigInt @map("created_at")
+
+  by User? @relation(fields: [byUserId], references: [id], onDelete: SetNull)
+
+  @@index([at])
+  @@index([kind])
+  @@index([direction])
+  @@map("txns")
+}

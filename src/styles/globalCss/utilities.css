@@ -1,0 +1,1090 @@
+/* utilities.css — کلاس‌های کمکی عمومی و کامپوننت‌های پایه
+ *
+ * هیچ رنگ خامی در این فایل نیست — همه از توکن‌های معنایی خوانده می‌شوند.
+ * کامپوننت‌های پایه (دکمه، کارت، ورودی، جدول) اینجا تعریف می‌شوند تا
+ * Tailwind فقط لایه کمکی باشد.
+ */
+
+@layer components {
+  /* === دکمه === */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    padding-inline: var(--space-4);
+    padding-block: var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .btn-sm {
+    min-height: 32px;
+    padding-inline: var(--space-3);
+    font-size: 0.857rem;
+  }
+
+  .btn-lg {
+    min-height: 48px;
+    padding-inline: var(--space-5);
+    font-size: 1.143rem;
+  }
+
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-strong);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-primary-subtle);
+    color: var(--color-primary-strong);
+    border-color: var(--color-primary);
+  }
+
+  .btn-danger {
+    background-color: var(--color-danger);
+    color: var(--color-on-danger);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: var(--color-danger-strong);
+  }
+
+  /* === کارت === */
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: var(--space-4);
+  }
+
+  .card-title {
+    margin-block-end: var(--space-3);
+    font-size: 1.143rem;
+    font-weight: 700;
+  }
+
+  /* === ورودی === */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  /* === ردیف‌های تکرارپذیر (تلفن/مخاطب) === */
+  .repeat-row {
+    display: grid;
+    grid-template-columns: minmax(8rem, 14rem) minmax(10rem, 1fr) auto;
+    gap: var(--space-2);
+    align-items: start;
+  }
+
+  .repeat-row-4 {
+    grid-template-columns: minmax(8rem, 1.2fr) minmax(7rem, 0.8fr) minmax(9rem, 1fr) auto;
+  }
+
+  @media (max-width: 767px) {
+    .repeat-row,
+    .repeat-row-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .repeat-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .field-label {
+    font-size: 0.929rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .input,
+  .select,
+  .textarea {
+    width: 100%;
+    min-height: 44px;
+    padding-inline: var(--space-3);
+    padding-block: var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 1rem;
+  }
+
+  .textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+
+  .input[aria-invalid="true"] {
+    border-color: var(--color-danger);
+  }
+
+  .field-error {
+    font-size: 0.857rem;
+    color: var(--color-danger-strong);
+  }
+
+  .field-hint {
+    font-size: 0.857rem;
+    color: var(--color-text-muted);
+  }
+
+  /* === جدول === */
+  .tbl-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+  }
+
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.929rem;
+  }
+
+  .tbl thead th {
+    text-align: start;
+    padding: var(--space-3);
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-secondary);
+    border-block-end: 1px solid var(--color-border);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .tbl tbody td {
+    padding: var(--space-3);
+    border-block-end: 1px solid var(--color-border-subtle);
+  }
+
+  .tbl tbody tr:hover {
+    background-color: var(--color-primary-subtle);
+  }
+}
+
+@layer utilities {
+  /* === کمک‌های چیدمان === */
+  .flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* پیوند درون‌برنامه‌ای — رنگ از توکن معنایی (D-05). */
+  .link {
+    color: var(--color-primary-strong);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .link:hover {
+    color: var(--color-primary);
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gap-2 {
+    gap: var(--space-2);
+  }
+
+  .gap-3 {
+    gap: var(--space-3);
+  }
+
+  .gap-4 {
+    gap: var(--space-4);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* === حلقه فوکوس === */
+  :focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* === حالت بارگذاری (CD-09) === */
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    color: var(--color-text-secondary);
+  }
+
+  .loading-state-spinner {
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    animation: spin 0.9s linear infinite;
+  }
+
+  .loading-state-label {
+    font-size: 1rem;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* === حالت خطا (CD-09) === */
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    border-color: var(--color-danger);
+  }
+
+  .error-state-title {
+    color: var(--color-danger-strong);
+  }
+
+  .error-state-message {
+    margin-block-end: var(--space-2);
+  }
+
+  /* ===CHIP مرحله سفارش (Q-09) ===
+   * فقط توکن‌های گروه مرحله مجازند.
+   */
+  .stage-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-block: var(--space-1);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-pill);
+    font-size: 0.857rem;
+    font-weight: 600;
+    color: var(--color-on-stage);
+    background-color: var(--color-stage-sales);
+  }
+
+  .stage-chip::before {
+    content: "";
+    inline-size: 8px;
+    block-size: 8px;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-on-stage);
+    opacity: 0.85;
+  }
+
+  .stage-chip[data-stage-group="sales"] {
+    background-color: var(--color-stage-sales);
+  }
+
+  .stage-chip[data-stage-group="approval"] {
+    background-color: var(--color-stage-approval);
+  }
+
+  .stage-chip[data-stage-group="production"] {
+    background-color: var(--color-stage-production);
+  }
+
+  .stage-chip[data-stage-group="fulfillment"] {
+    background-color: var(--color-stage-fulfillment);
+  }
+
+  /* مرحله «از دست رفته» — حالت پایانی، از توکن danger (CD-03). */
+  .stage-chip[data-stage-group="lost"] {
+    background-color: var(--color-danger);
+    color: var(--color-on-danger);
+  }
+
+  /* === برچسب خط (prod/agency) و برچسب‌های کمکی === */
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding-block: var(--space-1);
+    padding-inline: var(--space-2);
+    border-radius: var(--radius-pill);
+    font-size: 0.786rem;
+    font-weight: 600;
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+  }
+
+  .tag-chip[data-tone="info"] {
+    background-color: var(--color-info-subtle);
+    color: var(--color-primary-strong);
+    border-color: transparent;
+  }
+
+  .tag-chip[data-tone="success"] {
+    background-color: var(--color-success-subtle);
+    color: var(--color-success-strong);
+    border-color: transparent;
+  }
+
+  .tag-chip[data-tone="warning"] {
+    background-color: var(--color-warning-subtle);
+    color: var(--color-warning-strong);
+    border-color: transparent;
+  }
+
+  .tag-chip[data-tone="danger"] {
+    background-color: var(--color-danger-subtle);
+    color: var(--color-danger-strong);
+    border-color: transparent;
+  }
+
+  /* === خط لوله ۱۱ مرحله‌ای سفارش (PHASE_04 §۱۰/§۱۱ — Q-09) ===
+   * روی md و بالاتر: نوار افقی با ۱۱ نقطه و خط اتصال؛
+   * زیر md: لیست عمودی (CD-12).
+   * رنگ هر مرحله فقط از توکن گروه معنایی همان مرحله می‌آید.
+   */
+  .pipeline-row {
+    display: none;
+  }
+
+  .pipeline-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (min-width: 768px) {
+    .pipeline-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .pipeline-list {
+      display: none;
+    }
+
+    .pipeline-step {
+      position: relative;
+      flex: 1 1 0;
+      min-width: 0;
+      padding-block-start: 30px;
+      text-align: center;
+    }
+
+    /* خط اتصال: از لبه‌ی بیرونی (inline-end) هر مرحله تا مرکز نقطه‌ی آن. */
+    .pipeline-step::before {
+      content: "";
+      position: absolute;
+      inset-block-start: 11px;
+      inset-inline-end: 50%;
+      inline-size: 100%;
+      block-size: 2px;
+      background-color: var(--color-border);
+    }
+
+    .pipeline-step:first-child::before {
+      content: none;
+    }
+
+    .pipeline-step::after {
+      content: attr(data-step);
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-start: 50%;
+      translate: -50% 0;
+      inline-size: 24px;
+      block-size: 24px;
+      border-radius: var(--radius-pill);
+      display: grid;
+      place-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background-color: var(--color-surface);
+      border: 2px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .pipeline-step[data-state="done"]::before {
+      background-color: var(--color-stage-sales);
+    }
+
+    .pipeline-step[data-state="done"][data-stage-group="approval"]::before {
+      background-color: var(--color-stage-approval);
+    }
+
+    .pipeline-step[data-state="done"][data-stage-group="production"]::before {
+      background-color: var(--color-stage-production);
+    }
+
+    .pipeline-step[data-state="done"][data-stage-group="fulfillment"]::before {
+      background-color: var(--color-stage-fulfillment);
+    }
+
+    .pipeline-step[data-state="done"]::after {
+      content: "✓";
+      border-color: var(--color-border-subtle);
+      color: var(--color-text-secondary);
+    }
+
+    .pipeline-step[data-state="current"]::after {
+      background-color: var(--color-stage-sales);
+      border-color: var(--color-stage-sales);
+      color: var(--color-on-stage);
+      box-shadow: 0 0 0 4px var(--color-stage-sales-subtle, var(--color-info-subtle));
+    }
+
+    .pipeline-step[data-state="current"][data-stage-group="approval"]::after {
+      background-color: var(--color-stage-approval);
+      border-color: var(--color-stage-approval);
+    }
+
+    .pipeline-step[data-state="current"][data-stage-group="production"]::after {
+      background-color: var(--color-stage-production);
+      border-color: var(--color-stage-production);
+    }
+
+    .pipeline-step[data-state="current"][data-stage-group="fulfillment"]::after {
+      background-color: var(--color-stage-fulfillment);
+      border-color: var(--color-stage-fulfillment);
+    }
+
+    .pipeline-step[data-state="skipped"]::before {
+      background-color: var(--color-border-subtle);
+      background-image: repeating-linear-gradient(
+        to inline-end,
+        var(--color-border-subtle) 0 6px,
+        transparent 6px 12px
+      );
+    }
+
+    .pipeline-step[data-state="skipped"]::after {
+      border-style: dashed;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  .pipeline-label {
+    font-size: 0.786rem;
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+    overflow-wrap: break-word;
+  }
+
+  .pipeline-step[data-state="current"] .pipeline-label {
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .pipeline-step[data-state="skipped"] .pipeline-label,
+  .pipeline-row-item[data-state="skipped"] .pipeline-label {
+    text-decoration: line-through;
+    color: var(--color-text-secondary);
+  }
+
+  .pipeline-row-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-block: var(--space-2) var(--space-4);
+  }
+
+  .pipeline-row-item::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 12px;
+    inset-block: 0;
+    inline-size: 2px;
+    background-color: var(--color-border);
+  }
+
+  .pipeline-row-item:first-child::before {
+    inset-block-start: 26px;
+  }
+
+  .pipeline-row-item:last-child::before {
+    inset-block-end: calc(100% - 26px);
+  }
+
+  .pipeline-row-item[data-state="done"]::before {
+    background-color: var(--color-stage-sales);
+  }
+
+  .pipeline-row-item[data-state="done"][data-stage-group="approval"]::before {
+    background-color: var(--color-stage-approval);
+  }
+
+  .pipeline-row-item[data-state="done"][data-stage-group="production"]::before {
+    background-color: var(--color-stage-production);
+  }
+
+  .pipeline-row-item[data-state="done"][data-stage-group="fulfillment"]::before {
+    background-color: var(--color-stage-fulfillment);
+  }
+
+  .pipeline-row-item[data-state="skipped"]::before {
+    background-image: repeating-linear-gradient(
+      to block-end,
+      var(--color-border-subtle) 0 6px,
+      transparent 6px 12px
+    );
+    background-color: transparent;
+  }
+
+  .pipeline-marker {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 24px;
+    inline-size: 24px;
+    block-size: 24px;
+    border-radius: var(--radius-pill);
+    display: grid;
+    place-items: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    color: var(--color-text-secondary);
+  }
+
+  .pipeline-row-item[data-state="done"] .pipeline-marker {
+    border-color: var(--color-border-subtle);
+  }
+
+  .pipeline-row-item[data-state="current"] .pipeline-marker {
+    background-color: var(--color-stage-sales);
+    border-color: var(--color-stage-sales);
+    color: var(--color-on-stage);
+  }
+
+  .pipeline-row-item[data-state="current"][data-stage-group="approval"] .pipeline-marker {
+    background-color: var(--color-stage-approval);
+    border-color: var(--color-stage-approval);
+  }
+
+  .pipeline-row-item[data-state="current"][data-stage-group="production"] .pipeline-marker {
+    background-color: var(--color-stage-production);
+    border-color: var(--color-stage-production);
+  }
+
+  .pipeline-row-item[data-state="current"][data-stage-group="fulfillment"] .pipeline-marker {
+    background-color: var(--color-stage-fulfillment);
+    border-color: var(--color-stage-fulfillment);
+  }
+
+  .pipeline-row-item[data-state="skipped"] .pipeline-marker {
+    border-style: dashed;
+  }
+
+  .pipeline-row-item[data-state="current"] .pipeline-label {
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .pipeline-who {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary, var(--color-text-secondary));
+  }
+
+  /* === تخته سرنخ‌ها (PHASE_03 §۱۰/§۱۱) ===
+   * روی md و بالاتر: ۵ ستون با اسکرول افقی کنترل‌شده؛
+   * زیر md به لیست عمودی تبدیل می‌شود (utilities-board-list).
+   */
+  .board {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(16rem, 20rem);
+    gap: var(--space-3);
+    align-items: start;
+    overflow-x: auto;
+    padding-block: var(--space-2);
+  }
+
+  .board-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-height: 8rem;
+  }
+
+  .board-col-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-sunken);
+    font-weight: 700;
+  }
+
+  .board-col-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-height: 4rem;
+    padding: var(--space-2);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .board-col-body[data-drop-active="true"] {
+    background-color: var(--color-primary-subtle);
+    border-color: var(--color-primary);
+  }
+
+  .lead-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+    box-shadow: var(--shadow);
+    cursor: grab;
+  }
+
+  .lead-card[aria-grabbed="true"] {
+    opacity: 0.5;
+  }
+
+  .lead-card-title {
+    font-weight: 700;
+    font-size: 0.929rem;
+  }
+
+  .lead-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-block-start: var(--space-2);
+  }
+
+  .lead-card-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-block-start: var(--space-2);
+  }
+
+  /* زیر md: تخته به لیست عمودی هر خط تبدیل می‌شود (CD-12) */
+  @media (max-width: 767px) {
+    .board {
+      display: flex;
+      flex-direction: column;
+      overflow-x: visible;
+    }
+
+    .board-col {
+      width: 100%;
+    }
+  }
+
+  /* === دیالوگ مدال === */
+  .dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background-color: var(--color-scrim);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: var(--space-4);
+    overflow-y: auto;
+  }
+
+  .dialog {
+    width: 100%;
+    max-width: 32rem;
+    margin-block: var(--space-6);
+    padding: var(--space-4);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .dialog-sm {
+    max-width: 24rem;
+  }
+
+  .dialog-lg {
+    max-width: 48rem;
+  }
+
+  .dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-block-end: var(--space-3);
+  }
+
+  .dialog-title {
+    font-size: 1.143rem;
+    font-weight: 700;
+  }
+
+  .dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .dialog-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-block-start: var(--space-3);
+  }
+
+  /* === حالت خالی (CD-09) === */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .empty-state-icon {
+    color: var(--color-text-muted);
+  }
+
+  /* === سرصفحه صفحه + نوار فیلتر === */
+  .page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-block-end: var(--space-4);
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+  }
+
+  .toolbar-field {
+    min-width: min(100%, 14rem);
+  }
+
+  /* === دفعات/تاریخچه پیگیری === */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .timeline-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+  }
+
+  .timeline-item-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .timeline-note {
+    color: var(--color-text-secondary);
+    font-size: 0.929rem;
+    white-space: pre-wrap;
+  }
+
+  /* === گزارش ردیف‌های CSV === */
+  .import-report {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .import-row-result {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: baseline;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+  }
+
+  .import-row-result[data-ok="true"] {
+    background-color: var(--color-success-subtle);
+  }
+
+  .import-row-result[data-ok="false"] {
+    background-color: var(--color-danger-subtle);
+  }
+
+  .kpi-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-block-end: var(--space-4);
+  }
+
+  .kpi {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 8rem;
+  }
+
+  .kpi-value {
+    font-size: 1.429rem;
+    font-weight: 800;
+  }
+
+  /* قواعد چاپ سراسری — پنهان کردن پوسته برنامه روی کاغذ.
+     صفحه چاپ توکن‌دار اکنون HTML مستقل از مسیر /print/orders/[id] تولید
+     می‌کند (PHASE_08 Part A) و استایل مستقل خود را همراه دارد. */
+  @media print {
+    .navbar,
+    .sidebar,
+    .sidebar-backdrop,
+    .no-print {
+      display: none !important;
+    }
+
+    .app-body {
+      display: block;
+    }
+
+    .main-content {
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-surface);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+  }
+
+
+  /* === فاز ۷ — مدیریت، گزارش‌ها و خانه (PHASE_07 §۱۰/§۱۱) ===
+   * همه رنگ‌ها فقط از توکن‌های معنایی (CD-03). Breakpointها طبق CD-12.
+   */
+
+  /* متن راهنمای کوتاه */
+  .hint {
+    font-size: 0.857rem;
+    color: var(--color-text-muted);
+  }
+
+  /* شبکه‌های فرم: ۲/۳ ستون روی md و بالاتر، ۱ ستون زیر md */
+  .grid2,
+  .grid3,
+  .grid4 {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .grid2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .grid4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* نوار تب بخش‌ها */
+  .seg-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    border-block-end: 1px solid var(--color-border);
+    padding-block-end: var(--space-3);
+  }
+
+  .seg-tabs button {
+    min-height: 36px;
+    padding-inline: var(--space-4);
+    padding-block: var(--space-1);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 0.929rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .seg-tabs button:hover {
+    background-color: var(--color-primary-subtle);
+    color: var(--color-primary-strong);
+  }
+
+  .seg-tabs button.seg-tab-active,
+  .seg-tabs button[aria-selected="true"] {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  /* باکس هشدار/توجه */
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.929rem;
+  }
+
+  .alert-info {
+    background-color: var(--color-info-subtle);
+    border-color: transparent;
+    color: var(--color-primary-strong);
+  }
+
+  .alert-warning {
+    background-color: var(--color-warning-subtle);
+    border-color: transparent;
+    color: var(--color-warning-strong);
+  }
+
+  /* کاشی‌های خلاصه — داشبورد خانه و گزارش‌ها (A-7.3) */
+  .dash-grid {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .dash-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .dash-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .dash-tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .dash-tile-label {
+    font-size: 0.857rem;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+  }
+
+  .dash-tile-value {
+    font-size: 1.714rem;
+    font-weight: 800;
+    color: var(--color-text);
+  }
+
+  .dash-tile-hint {
+    font-size: 0.786rem;
+    color: var(--color-text-muted);
+  }
+
+  /* جمع‌های فرمول تولید (BOM) */
+  .bom-totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-6);
+    margin-block-start: var(--space-4);
+    padding: var(--space-4);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-sunken);
+  }
+
+  .bom-totals div {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-inline-size: 10rem;
+  }
+
+  .bom-totals dt {
+    font-size: 0.786rem;
+    color: var(--color-text-muted);
+  }
+
+  .bom-totals dd {
+    margin: 0;
+    font-size: 1.143rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  /* ورودی مقدار مصرف BOM — فشرده و لترال */
+  .os-num {
+    max-inline-size: 8rem;
+    text-align: end;
+  }
+}

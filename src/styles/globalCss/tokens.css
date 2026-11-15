@@ -1,0 +1,126 @@
+/* tokens.css — منبع واحد توکن‌های طراحی (D-05)
+ *
+ * تنها فایلی (کنار themes.css) که مقادیر رنگ خام در آن قرار دارند.
+ * همه استفاده‌های رنگ در برنامه باید از توکن معنایی این فایل بخوانند.
+ * پالت پایه از توکن‌های ارزشمند Demo حفظ شده است (GLOBAL_CSS_AND_THEME_TOKENS.md §۱).
+ */
+
+:root {
+  /* =========================================================
+   * پالت پایه (مقادیر خام) — ارجاع مستقیم ممنوع در کامپوننت‌ها
+   * ========================================================= */
+  --palette-navy: #0a2150;
+  --palette-blue-700: #0f4fb8;
+  --palette-blue-500: #1662d8;
+  --palette-blue-100: #d8e7ff;
+  --palette-blue-50: #eaf2ff;
+  --palette-purple-500: #6a4fd8;
+  --palette-purple-50: #f0ecff;
+  --palette-orange-700: #b25300;
+  --palette-orange-500: #e8790f;
+  --palette-orange-50: #fff3e5;
+  --palette-green-700: #0d7040;
+  --palette-green-500: #18a058;
+  --palette-green-50: #e8f7ee;
+  --palette-red-700: #a92424;
+  --palette-red-500: #d63a3a;
+  --palette-red-50: #fdecec;
+  --palette-yellow-700: #8a6400;
+  --palette-yellow-50: #fff8db;
+
+  --palette-ink: #0f1d3a;
+  --palette-ink-2: #3a4a66;
+  --palette-muted: #6b7a93;
+  --palette-line: #e4eaf3;
+  --palette-line-2: #eef2f8;
+  --palette-bg: #f3f6fb;
+  --palette-card: #ffffff;
+
+  /* =========================================================
+   * توکن‌های معنایی — سطح و متن
+   * ========================================================= */
+  --color-bg: var(--palette-bg);
+  --color-surface: var(--palette-card);
+  --color-surface-sunken: var(--palette-bg);
+  --color-border: var(--palette-line);
+  --color-border-subtle: var(--palette-line-2);
+  --color-text: var(--palette-ink);
+  --color-text-secondary: var(--palette-ink-2);
+  --color-text-muted: var(--palette-muted);
+  --color-on-primary: #ffffff;
+  --color-on-danger: #ffffff;
+  --color-on-stage: #ffffff;
+  --color-scrim: rgba(15, 23, 42, 0.45);
+
+  /* =========================================================
+   * توکن‌های معنایی — عمل و بازخورد
+   * ========================================================= */
+  --color-primary: var(--palette-blue-500);
+  --color-primary-strong: var(--palette-blue-700);
+  --color-primary-subtle: var(--palette-blue-50);
+  --color-info: var(--palette-blue-500);
+  --color-info-subtle: var(--palette-blue-50);
+
+  --color-success: var(--palette-green-500);
+  --color-success-strong: var(--palette-green-700);
+  --color-success-subtle: var(--palette-green-50);
+
+  --color-warning: var(--palette-orange-500);
+  --color-warning-strong: var(--palette-orange-700);
+  --color-warning-subtle: var(--palette-orange-50);
+
+  --color-danger: var(--palette-red-500);
+  --color-danger-strong: var(--palette-red-700);
+  --color-danger-subtle: var(--palette-red-50);
+
+  --color-attention: var(--palette-yellow-700);
+  --color-attention-subtle: var(--palette-yellow-50);
+
+  /* =========================================================
+   * توکن‌های معنایی — گروه‌بندی مراحل خط لوله سفارش (Q-09)
+   *
+   * ۱۱ مرحله Demo در ۴ گروه معنایی تجمیع شده‌اند (قرار داد در
+   * PHASE_1_REPORT.md بخش Q-09). هر گروه دقیقاً یک توکن رنگ دارد
+   * و این تنها پالت مجاز برای نمایش مرحله سفارش است.
+   *   --color-stage-sales       → ثبت و جریان فروش
+   *   --color-stage-approval    → تأیید و پرداخت
+   *   --color-stage-production  → تولید
+   *   --color-stage-fulfillment → انبار و تحویل
+   * وضعیت‌های پایانی: تحویل‌شده از success، لغو‌شده از danger.
+   * ========================================================= */
+  --color-stage-sales: var(--palette-blue-500);
+  --color-stage-approval: var(--palette-purple-500);
+  --color-stage-production: var(--palette-orange-500);
+  --color-stage-fulfillment: var(--palette-green-500);
+
+  /* =========================================================
+   * فضاآزاد — مقیاس ۴px
+   * ========================================================= */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* =========================================================
+   * شعاع، سایه، چیدمان
+   * ========================================================= */
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+
+  --shadow: 0 1px 2px rgba(15, 35, 80, 0.05), 0 6px 20px rgba(15, 35, 80, 0.05);
+  --shadow-lg: 0 4px 8px rgba(15, 35, 80, 0.08), 0 12px 32px rgba(15, 35, 80, 0.08);
+  --shadow-drawer: -4px 0 24px rgba(15, 35, 80, 0.12);
+
+  --sidebar-width: 256px;
+  --navbar-height: 56px;
+
+  --font-sans: var(--font-vazirmatn), Tahoma, sans-serif;
+
+  --focus-ring: rgba(22, 98, 216, 0.45);
+}
