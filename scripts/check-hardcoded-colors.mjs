@@ -12,7 +12,7 @@
  * این ماژول همچنین از آزمون vitest استفاده می‌شود (src/test/no-hardcoded-colors.test.ts).
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 

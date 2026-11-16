@@ -1,7 +1,7 @@
 /**
  * آزمون نوار بالا — نمایش نقش کاربر واقعی و خروج (PHASE_02 §۱۰).
  */
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicUser } from "@core/auth";
 import { Navbar } from "./Navbar";
@@ -16,6 +16,7 @@ vi.mock("@modules/auth/hooks/useAuth", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  usePathname: () => "/",
 }));
 
 const { useMeQuery } = await import("@modules/auth/hooks/useAuth");
@@ -50,7 +51,10 @@ describe("Navbar — نقش واقعی", () => {
     render(<Navbar onOpenSidebar={() => {}} />);
     expect(screen.getByText("ali")).toBeInTheDocument();
     expect(screen.getByText("ادمین")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "خروج" })).toBeInTheDocument();
+    // منوی کاربر با کلیک باز می‌شود (like Demo user-chip)
+    const chip = screen.getByRole("button", { name: /ali/ });
+    fireEvent.click(chip);
+    expect(screen.getByRole("menuitem", { name: /خروج/ })).toBeInTheDocument();
   });
 
   it("چند نقش: برچسب‌ها با ویرگول جدا می‌شوند", () => {

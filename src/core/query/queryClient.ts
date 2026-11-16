@@ -136,6 +136,8 @@ export const queryKeys = {
     suppliers: () => [...queryKeys.admin.all, "suppliers"] as const,
     users: () => [...queryKeys.admin.all, "users"] as const,
     lists: () => [...queryKeys.admin.all, "lists"] as const,
+    /** ستون‌های بورد سرنخ (فاز ۸ — ذخیره در List key "leadcols") */
+    leadcols: () => [...queryKeys.admin.all, "leadcols"] as const,
     settings: () => [...queryKeys.admin.all, "settings"] as const,
   },
   /** گزارش‌های تجمیعی (فاز ۷) */

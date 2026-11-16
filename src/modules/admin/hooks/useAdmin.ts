@@ -252,3 +252,33 @@ export function useSaveSettingsMutation() {
     },
   });
 }
+
+// --- ستون‌های بورد سرنخ (فاز ۸) ---------------------------------------------
+
+/** ستون بورد سرنخ — معادل LeadColumnDef سرویس. */
+export type LeadColRow = {
+  stage: string;
+  key: string;
+  label: string;
+  color: string;
+};
+
+/** خواندن ستون‌های بورد سرنخ (GET /api/admin/leadcols). */
+export function useLeadColsQuery() {
+  return useQuery<{ columns: LeadColRow[] }, ApiError>({
+    queryKey: queryKeys.admin.leadcols(),
+    queryFn: () => apiFetch<{ columns: LeadColRow[] }>("/api/admin/leadcols"),
+  });
+}
+
+/** ذخیره ستون‌های بورد سرنخ (PUT /api/admin/leadcols). */
+export function useSaveLeadColsMutation() {
+  const qc = useQueryClient();
+  return useMutation<{ columns: LeadColRow[] }, ApiError, { columns: LeadColRow[] }>({
+    mutationFn: (input) => apiFetch<{ columns: LeadColRow[] }>("/api/admin/leadcols", { method: "PUT", json: input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.admin.leadcols() });
+      void qc.invalidateQueries({ queryKey: queryKeys.leads.all });
+    },
+  });
+}

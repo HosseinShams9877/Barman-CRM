@@ -1,7 +1,10 @@
 /* layout.css — چیدمان صفحه، نوار کناری، نوار بالا
  *
- * ۵ breakpoint مجاز: xs <480, sm 480-767, md 768-1023, lg 1024-1279, xl >=1280.
- * زیر md نوار کناری به drawer تبدیل می‌شود.
+ * مقادیر دقیقاً از Demo (app/br.css بخش پوسته) — فاز ۸ parity:
+ *   - سایدربار تیره با گرادیان سرمه‌ای، برند، آیکن‌ها
+ *   - topbar چسبان با عنوان صفحه، مسیر، جستجو، چیپ کاربر
+ *   - ۵ breakpoint مجاز: xs <480, sm 480-767, md 768-1023, lg 1024-1279, xl >=1280.
+ *     زیر md (1024px) نوار کناری drawer می‌شود — مطابق Demo.
  */
 
 .app-shell {
@@ -20,49 +23,89 @@
 .main-content {
   flex: 1;
   min-width: 0;
-  padding: var(--space-4);
-  padding-top: calc(var(--navbar-height) + var(--space-4));
+  padding: 22px 24px 40px;
 }
 
-/* نوار بالا — فیکس بالای صفحه در همه عرض‌ها */
+/* ---------------------------------------------------------------------------
+ * نوار بالا — .topbar در Demo (br.css)
+ * ------------------------------------------------------------------------- */
+.topbar,
 .navbar {
-  position: fixed;
-  inset-block-start: 0;
-  inset-inline: 0;
-  height: var(--navbar-height);
-  z-index: 40;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding-inline: var(--space-4);
-  background-color: var(--color-surface);
+  gap: 18px;
+  padding: 18px 28px;
+  background: var(--color-surface);
   border-block-end: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
-/* بخش نشست در لبه‌ی مقابل (چپ در RTL) */
+.page-title {
+  min-width: 0;
+}
+
+.page-title h1 {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.crumbs {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.crumbs span + span::before,
+.crumbs a + span::before,
+.crumbs a + a::before {
+  content: "/";
+  margin-inline-end: 8px;
+  color: var(--color-crumb-sep);
+}
+
+.top-search {
+  flex: 1;
+  max-width: 520px;
+  margin-inline-start: auto;
+  position: relative;
+}
+
+.top-search input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid var(--color-border);
+  background: var(--color-search-bg);
+  border-radius: 12px;
+  padding: 0 16px 0 46px;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.top-search svg.icon,
+.top-search > svg {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  color: var(--color-text-secondary);
+}
+
+.top-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .navbar-session {
   margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.navbar-user {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.3;
-}
-
-.navbar-name {
-  font-size: 0.929rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.navbar-role {
-  font-size: 0.786rem;
-  color: var(--color-text-muted);
 }
 
 .navbar-login-link {
@@ -81,160 +124,362 @@
   font-size: 0.857rem;
 }
 
-.navbar-loading .loading-state-spinner {
-  font-size: 1rem;
+/* ---------------------------------------------------------------------------
+ * آیکن‌ها — .icon در Demo (br.css)
+ * ------------------------------------------------------------------------- */
+svg.icon,
+svg.icon-sm,
+svg.icon-xs {
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-/* نوار کناری — ثابت در >=md، drawer در <md */
+svg.icon {
+  width: 22px;
+  height: 22px;
+}
+
+svg.icon-sm {
+  width: 18px;
+  height: 18px;
+}
+
+svg.icon-xs {
+  width: 15px;
+  height: 15px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+ * دکمه‌های آیکنی و چیپ کاربر — Demo
+ * ------------------------------------------------------------------------- */
+.icon-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0;
+}
+
+.icon-btn:hover {
+  background: var(--color-bg);
+}
+
+.hamburger {
+  display: none;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+}
+
+.user-chip:hover {
+  background: var(--color-bg);
+}
+
+.user-chip b {
+  display: block;
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+.user-chip small {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  display: block;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--color-on-primary);
+  font-weight: 800;
+  font-size: 13px;
+  flex: none;
+  background: var(--palette-navy);
+}
+
+.avatar.lg {
+  width: 46px;
+  height: 46px;
+  font-size: 16px;
+}
+
+.rel {
+  position: relative;
+}
+
+.pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-start: 0;
+  min-width: 280px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px var(--color-pop-shadow);
+  padding: 8px;
+  z-index: 50;
+}
+
+.pop h3 {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  padding: 6px 10px;
+  margin: 0;
+}
+
+.pop button.opt {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: none;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+}
+
+.pop button.opt:hover {
+  background: var(--color-primary-subtle);
+}
+
+/* ---------------------------------------------------------------------------
+ * نوار کناری — .side در Demo (br.css): تیره با گرادیان سرمه‌ای
+ * ------------------------------------------------------------------------- */
 .sidebar {
   position: fixed;
   inset-block: 0;
   inset-inline-start: 0;
   width: var(--sidebar-width);
-  z-index: 30;
-  background-color: var(--color-surface);
-  border-inline-end: 1px solid var(--color-border);
-  overflow-y: auto;
-  padding: var(--space-4) var(--space-3);
-}
-
-.sidebar-nav {
+  z-index: 40;
+  background: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  margin-block-start: var(--space-5);
+  padding: 22px 16px;
+  overflow-y: auto;
 }
 
-.sidebar-label {
-  font-size: 0.786rem;
-  color: var(--color-text-muted);
-  padding: var(--space-2) var(--space-3);
-  text-transform: none;
-}
-
-.sidebar-link {
-  display: block;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  font-weight: 600;
+.side-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 26px;
+  color: var(--color-sidebar-text);
   text-decoration: none;
 }
 
-.sidebar-link:hover {
-  background-color: var(--color-primary-subtle);
-  color: var(--color-primary-strong);
+.side-brand > svg {
+  width: 46px;
+  height: 40px;
+  color: var(--color-on-primary);
+  flex: none;
 }
 
-/* صفحه فعلی — نشانگر بصری غیررنگی */
-.sidebar-link[aria-current="page"] {
-  background-color: var(--color-surface-sunken);
-  color: var(--color-text);
+.side-brand b {
+  display: block;
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--color-on-primary);
+  line-height: 1.3;
+}
+
+.side-brand small {
+  display: block;
+  font-size: 10.5px;
+  color: var(--palette-sidebar-brand-en);
+  white-space: nowrap;
+}
+
+.sidebar-close {
+  display: none;
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 12px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-sidebar-border);
+  color: var(--color-sidebar-text);
+  cursor: pointer;
+  place-items: center;
+}
+
+.side-nav {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.side-group {
+  display: grid;
+  gap: 4px;
+}
+
+.side-cap {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-sidebar-cap);
+  padding: 14px 14px 4px;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--color-sidebar-link);
+  transition: background 0.15s, color 0.15s;
+  text-decoration: none;
+}
+
+.side-link:hover {
+  background: var(--color-sidebar-link-hover);
+  color: var(--color-on-primary);
+}
+
+.side-link[aria-current="page"] {
+  background: var(--color-active-link);
+  color: var(--color-on-primary);
+  box-shadow: 0 6px 18px var(--color-active-glow);
+}
+
+.side-foot {
+  margin-top: auto;
+  padding: 14px 10px 0;
+  border-top: 1px solid var(--color-sidebar-border);
+  font-size: 12px;
+  color: var(--color-sidebar-foot);
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-live-dot);
+  box-shadow: 0 0 0 3px var(--color-live-ring);
+  margin-inline-end: 4px;
+  vertical-align: middle;
 }
 
 /* در >=md محتوای اصلی از عرض نوار کناری فاصله می‌گیرد */
 @media (min-width: 768px) {
-  .main-content {
-    padding-inline: var(--space-5);
-  }
-
   .app-body:has(.sidebar) .main-content {
     margin-inline-start: var(--sidebar-width);
   }
 }
 
-/* drawer زیر md — overlay + پنل کشویی */
-.sidebar-backdrop {
-  display: none;
-}
-
-@media (max-width: 767px) {
+/* ---------------------------------------------------------------------------
+ * responsive — مطابق Demo: زیر 1024px سایدربار drawer می‌شود
+ * ------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
   .sidebar {
     transform: translateX(100%);
-    transition: transform 0.22s ease;
-    box-shadow: var(--shadow-drawer);
-  }
-
-  [dir="rtl"] .sidebar {
-    transform: translateX(-100%);
+    transition: transform 0.25s;
+    box-shadow: -20px 0 60px var(--color-drawer-shadow);
   }
 
   .sidebar[data-open="true"] {
-    transform: translateX(0);
+    transform: none;
   }
 
-  .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 25;
-    background-color: var(--color-scrim);
+  .sidebar-close {
+    display: grid;
   }
 
-  .sidebar-backdrop[hidden] {
+  .hamburger,
+  .menu-btn {
+    display: grid;
+  }
+
+  .top-search {
+    order: 5;
+    flex-basis: 100%;
+    max-width: none;
+    margin-inline-start: 0;
+  }
+
+  .topbar,
+  .navbar {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .top-tools {
+    margin-inline-start: auto;
+  }
+
+  .main-content {
+    padding: 18px 16px 32px;
+  }
+
+  .user-chip .txt {
     display: none;
   }
-}
 
-/* ظرف مرکزی با حداکثر عرض محتوا */
-.container-app {
-  width: 100%;
-  max-width: 1440px;
-  margin-inline: auto;
-}
-
-/* گرید فرم‌ها: ۲ ستونه در >=md، تک‌ستونه در موبایل */
-.form-grid {
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 768px) {
-  .form-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .page-title h1 {
+    font-size: 18px;
   }
 }
 
-/* صفحه ورود — کارت مرکزی، تمام عرض تا md */
-.login-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - var(--navbar-height));
-  min-height: calc(100dvh - var(--navbar-height));
-  padding: var(--space-4);
-}
-
-.login-card {
-  width: 100%;
-  max-width: 420px;
-}
-
-.login-title {
-  margin-block-end: var(--space-2);
-}
-
-.login-hint {
-  margin-block-end: var(--space-4);
-}
-
-.login-error {
-  margin-block-end: var(--space-3);
-}
-
-.login-submit {
-  width: 100%;
-  margin-block-start: var(--space-2);
-}
-
-/* کلید همبرگر فقط زیر md دیده می‌شود */
-.hamburger {
-  display: inline-flex;
-}
-
-@media (min-width: 768px) {
-  .hamburger {
-    display: none;
+@media (max-width: 767px) {
+  .topbar,
+  .navbar {
+    position: static;
   }
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-backdrop);
+  z-index: 35;
+  border: 0;
+  padding: 0;
+  cursor: default;
 }

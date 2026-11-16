@@ -37,6 +37,42 @@
   --palette-card: #ffffff;
 
   /* =========================================================
+   * پوسته سایدبار/توپ‌بار — مقادیر خام Demo (app/br.css بخش .side)
+   * ========================================================= */
+  --palette-sidebar-top: #0c2a62;
+  --palette-sidebar-mid: #0a1f4a;
+  --palette-sidebar-bottom: #081a3e;
+  --palette-sidebar-text: #dfe8f8;
+  --palette-sidebar-link: #d4def2;
+  --palette-sidebar-cap: #8ea2c8;
+  --palette-sidebar-foot: #93a6c9;
+  --palette-sidebar-brand-en: #a9b9d8;
+  --palette-active-link-1: #1f78f0;
+  --palette-active-link-2: #1559d0;
+  --palette-live-dot: #2fd47a;
+  --palette-search-bg: #f7f9fd;
+  --palette-crumb-sep: #b2bdd0;
+  --palette-pop-shadow: rgba(10, 30, 70, 0.16);
+  --palette-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --palette-sidebar-border: rgba(255, 255, 255, 0.08);
+  --palette-active-glow: rgba(20, 100, 230, 0.35);
+  --palette-live-ring: rgba(47, 212, 122, 0.25);
+  --palette-drawer-shadow: rgba(0, 0, 0, 0.3);
+  --palette-backdrop: rgba(8, 20, 50, 0.45);
+  /* کامپوننت‌ها — Demo br.css */
+  --palette-primary-grad-top: #1a6ce6;
+  --palette-primary-grad-bottom: #1258c9;
+  --palette-btn-hover-bg: #fafcff;
+  --palette-btn-hover-border: #c8d4e6;
+  --palette-input-border: #d9e1ee;
+  --palette-focus-soft: rgba(22, 98, 216, 0.15);
+  --palette-table-head: #f6f8fc;
+  --palette-row-hover: #fafcff;
+  --palette-danger-soft-border: #f2c4c4;
+  --palette-danger-hover-border: #e9a6a6;
+  --palette-btn-primary-shadow: rgba(22, 98, 216, 0.28);
+
+  /* =========================================================
    * توکن‌های معنایی — سطح و متن
    * ========================================================= */
   --color-bg: var(--palette-bg);
@@ -51,6 +87,49 @@
   --color-on-danger: #ffffff;
   --color-on-stage: #ffffff;
   --color-scrim: rgba(15, 23, 42, 0.45);
+
+  /* پوسته — توکن‌های معنایی سایدبار (Demo br.css) */
+  --color-sidebar-bg: linear-gradient(
+    180deg,
+    var(--palette-sidebar-top) 0%,
+    var(--palette-sidebar-mid) 55%,
+    var(--palette-sidebar-bottom) 100%
+  );
+  --color-sidebar-text: var(--palette-sidebar-text);
+  --color-sidebar-link: var(--palette-sidebar-link);
+  --color-sidebar-link-hover: var(--palette-sidebar-hover);
+  --color-sidebar-cap: var(--palette-sidebar-cap);
+  --color-sidebar-foot: var(--palette-sidebar-foot);
+  --color-sidebar-border: var(--palette-sidebar-border);
+  --color-active-link: linear-gradient(90deg, var(--palette-active-link-1), var(--palette-active-link-2));
+  --color-active-glow: var(--palette-active-glow);
+  --color-search-bg: var(--palette-search-bg);
+  --color-crumb-sep: var(--palette-crumb-sep);
+  --color-pop-shadow: var(--palette-pop-shadow);
+  --color-live-dot: var(--palette-live-dot);
+  --color-live-ring: var(--palette-live-ring);
+  --color-drawer-shadow: var(--palette-drawer-shadow);
+  --color-backdrop: var(--palette-backdrop);
+  /* کامپوننت‌ها — Demo br.css */
+  --color-primary-gradient: linear-gradient(
+    180deg,
+    var(--palette-primary-grad-top),
+    var(--palette-primary-grad-bottom)
+  );
+  --color-primary-gradient-hover: linear-gradient(
+    180deg,
+    var(--palette-primary-grad-bottom),
+    var(--palette-blue-700)
+  );
+  --color-btn-hover-bg: var(--palette-btn-hover-bg);
+  --color-btn-hover-border: var(--palette-btn-hover-border);
+  --color-input-border: var(--palette-input-border);
+  --color-focus-soft: var(--palette-focus-soft);
+  --color-table-head: var(--palette-table-head);
+  --color-row-hover: var(--palette-row-hover);
+  --color-danger-soft-border: var(--palette-danger-soft-border);
+  --color-danger-hover-border: var(--palette-danger-hover-border);
+  --color-btn-primary-shadow: var(--palette-btn-primary-shadow);
 
   /* =========================================================
    * توکن‌های معنایی — عمل و بازخورد

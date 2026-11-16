@@ -13,7 +13,6 @@
  * اجرا: npx prisma db seed
  */
 import bcrypt from "bcryptjs";
-import { pathToFileURL } from "node:url";
 // پسوند صریح برای اجرای مستقیم با node --experimental-strip-types
 import { prisma } from "./client.ts";
 import { ROLE_LABELS, ROLES } from "../permissions/matrix.ts";
@@ -124,8 +123,16 @@ export async function seed(): Promise<void> {
   );
 }
 
-// فقط هنگام اجرای مستقیم به‌عنوان اسکریپت (نه import).
-const isMainModule = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+// فقط هنگام اجرای مستقیم به‌عنوان اسکریپت (نه import). pathToFileURL در
+// محیط مرورگر وجود ندارد (native-url shim در Next) — اگر این فایل از
+// مسیر کلاینت import شود، ارزیابی ماژول نباید شکست بخورد.
+let isMainModule = false;
+try {
+  const { pathToFileURL } = await import("node:url");
+  isMainModule = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+} catch {
+  isMainModule = false;
+}
 if (isMainModule) {
   seed()
     .then(async () => {
