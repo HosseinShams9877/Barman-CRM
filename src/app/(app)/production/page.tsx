@@ -1,4 +1,4 @@
-import { JobList } from "@modules/production";
+import { ProductionPage as ProductionWorkspace } from "@modules/production/components/ProductionPage";
 
 /**
  * /production — لیست کارهای تولید (PHASE_05 §۱۰).
@@ -9,7 +9,7 @@ import { JobList } from "@modules/production";
 export default function ProductionPage() {
   return (
     <div className="container-app py-8 flex flex-col gap-6">
-      <JobList />
+      <ProductionWorkspace />
     </div>
   );
 }

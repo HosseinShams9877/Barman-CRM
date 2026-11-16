@@ -243,9 +243,11 @@ export type OrderDetail = OrderListItem & {
 /** جزئیات — نسخه noMoney: اقلام بدون قیمت و بدون فیلدهای پولی. */
 export type OrderDetailNoMoney = Omit<
   OrderDetail,
-  "calc" | "paid" | "balance" | "discPct" | "discAmt" | "ship" | "install"
+  "calc" | "paid" | "balance" | "discPct" | "discAmt" | "ship" | "install" | "items" | "payments" | "cheques"
 > & {
   items: OrderItemRowNoMoney[];
+  payments: Omit<PaymentRow, "amount">[];
+  cheques: Omit<ChequeRow, "amount">[];
 };
 
 export type OrderListResult<T = OrderListItem | OrderListItemNoMoney> = {
@@ -256,6 +258,9 @@ export type OrderListResult<T = OrderListItem | OrderListItemNoMoney> = {
 };
 
 export type OrderListParams = {
+  bucket?: import("../constants/buckets").OrderBucket;
+  overdue?: boolean;
+  incomplete?: boolean;
   stage: number | null;
   status: OrderStatus | null;
   ownerId: string | null;

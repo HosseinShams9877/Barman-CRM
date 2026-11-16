@@ -77,6 +77,7 @@ export async function listPayables(
         supplierName: groupName,
         buyId: buy.id,
         kind: "cheque",
+        chequeId: chq.id, sayad: chq.sayad ?? "", status: chq.status,
         amount: chq.amount,
         due: chq.due,
       });

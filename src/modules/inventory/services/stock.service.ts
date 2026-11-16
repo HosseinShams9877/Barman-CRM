@@ -86,11 +86,12 @@ async function computeUsed30(): Promise<Record<string, number>> {
  * اقلام کاتالوگ را با موجودی نشان می‌دهند (app/stock.js:۱۷ و ۲۲).
  */
 export async function getStock(hideMoney: boolean): Promise<StockRow[] | StockRowNoMoney[]> {
-  const [materials, products, onHand, used30] = await Promise.all([
+  const [materials, products, onHand, used30, jobs] = await Promise.all([
     prisma.material.findMany({ orderBy: { name: "asc" } }),
     prisma.product.findMany({ orderBy: { name: "asc" } }),
     computeOnHand(),
     computeUsed30(),
+    prisma.job.findMany({ where: { status: "sent" }, select: { productId: true, good: true } }),
   ]);
 
   const rows: StockRow[] = [];
@@ -98,7 +99,7 @@ export async function getStock(hideMoney: boolean): Promise<StockRow[] | StockRo
     rows.push(toStockRow(m, "raw", onHand, used30, 0));
   }
   for (const p of products) {
-    rows.push(toStockRow(p, "depot", onHand, used30, 0));
+    rows.push({ ...toStockRow(p, "depot", onHand, used30, 0), inTransit: jobs.filter((j) => j.productId === p.id).reduce((sum,j) => sum + (j.good ?? 0), 0) });
   }
 
   if (hideMoney) {

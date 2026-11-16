@@ -7,6 +7,9 @@
  *  - هشدار موجودی مواد (کمتر از حداقل — app/stock.js:27)
  *  - چک‌های نزد سررسید (۷ روز آینده — home.js:64)
  *
+ * برای سایدبار (پریتی دمو): تعداد سفارش در هر مرحله (stageCounts) و
+ * تعداد چک‌های ناقص (incompleteCheques) هم برگردانده می‌شود.
+ *
  * قوانین:
  *  - scoping در سرور: نقش‌های با leads.view بدون leads.viewAll (sales)
  *    فقط سرنخ‌ها و سفارش‌های خودشان را می‌بینند (PHASE_07 §۸).
@@ -17,6 +20,8 @@ import { prisma } from "@core/database/client";
 import { instantToJalaliIso } from "@core/calendar";
 import { getStockAlerts } from "@modules/inventory/services/stock.service";
 import { MS_PER_DAY } from "../../reports/services/bucketing";
+import { toEnDigits } from "@core/formatting";
+import type { DashboardWorkspace } from "./workspace.service";
 
 /** محدوده دید داشبورد — ساخته‌شده در Route Handler از مجوزها (CD-05). */
 export type DashboardScope = {
@@ -35,6 +40,11 @@ export type DashboardSummary = {
   dueCheques: number;
   /** مبلغ چک‌های نزد سررسید — فقط برای نقش‌های دارای money.view. */
   dueChequesAmount?: number;
+  /** تعداد سفارش‌های باز در هر مرحله (کلید = شماره مرحله ۱..۱۱) — برای badge سایدبار. */
+  stageCounts: Record<number, number>;
+  /** تعداد چک‌های ناقص (بدون sayad کامل) — برای badge سایدبار (home.js TASKS.nochq). */
+  incompleteCheques: number;
+  workspace?: DashboardWorkspace;
 };
 
 /** مرحله‌های باز سرنخ — won/lost بسته هستند. */
@@ -49,8 +59,9 @@ export async function getDashboardSummary(
 ): Promise<DashboardSummary> {
   const leadWhere = { stage: { in: OPEN_LEAD_STAGES } } as const;
   const orderWhere = { status: "open" } as const;
+  const ownerFilter = scope.restrictToOwner ? { ownerId: scope.userId } : {};
 
-  const [openLeads, activeOrders, alerts] = await Promise.all([
+  const [openLeads, activeOrders, alerts, stageGroups] = await Promise.all([
     prisma.lead.count({
       where: scope.restrictToOwner ? { ...leadWhere, ownerId: scope.userId } : leadWhere,
     }),
@@ -58,17 +69,36 @@ export async function getDashboardSummary(
       where: scope.restrictToOwner ? { ...orderWhere, ownerId: scope.userId } : orderWhere,
     }),
     getStockAlerts(),
+    prisma.order.groupBy({
+      by: ["stage"],
+      where: { status: "open", ...ownerFilter },
+      _count: { _all: true },
+    }),
   ]);
 
+  // نرمال‌سازی stageCounts به یک شیء با کلید همه ۱۱ مرحله (۰ پیش‌فرض)
+  const stageCounts: Record<number, number> = {};
+  for (let s = 1; s <= 11; s++) stageCounts[s] = 0;
+  for (const g of stageGroups) {
+    stageCounts[g.stage] = g._count._all;
+  }
+
   // چک‌های دریافتی با سررسید ۷ روز آینده (home.js:64) — چک clear واریز شده.
-  // سررسید قالب `YYYY/MM/DD` (CD-06) — مقایسه رشته‌ای معتبر است.
   const now = Date.now();
   const fromIso = instantToJalaliIso(now);
   const toIso = instantToJalaliIso(now + 7 * MS_PER_DAY);
+
   const cheques = await prisma.orderCheque.findMany({
-    where: { status: { not: "clear" }, due: { gte: fromIso, lte: toIso } },
-    select: { amount: true },
+    where: { status: { not: "clear" }, due: { gte: fromIso, lte: toIso }, ...(scope.restrictToOwner ? { order: { ownerId: scope.userId } } : {}) },
+    select: { amount: true, sayad: true, status: true },
   });
+
+  // چک ناقص: sayad خالی یا کمتر از ۱۶ رقم (home.js chqDone/chqIncomplete)
+  const openCheques = await prisma.orderCheque.findMany({
+    where: { order: { status: "open", stage: { gte: 6 }, ...ownerFilter } },
+    select: { sayad: true, due: true, bank: true, owner: true },
+  });
+  const incompleteCheques = openCheques.filter((c) => toEnDigits(c.sayad ?? "").replace(/\D/g, "").length !== 16 || !c.due || !c.bank || !c.owner).length;
 
   return {
     openLeads,
@@ -76,5 +106,7 @@ export async function getDashboardSummary(
     stockAlerts: alerts.length,
     dueCheques: cheques.length,
     ...(hideMoney ? {} : { dueChequesAmount: cheques.reduce((s, c) => s + c.amount, 0) }),
+    stageCounts,
+    incompleteCheques,
   };
 }

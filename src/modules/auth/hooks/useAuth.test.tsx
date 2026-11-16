@@ -10,6 +10,7 @@ import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@core/errors";
 import { useLoginMutation, useLogoutMutation, useMeQuery } from "./useAuth";
+import { queryKeys } from "@core/query";
 
 vi.mock("@core/api", () => ({
   apiFetch: vi.fn(),
@@ -74,6 +75,17 @@ describe("useMeQuery", () => {
 });
 
 describe("useLoginMutation", () => {
+  it("تغییر کاربر داده‌های نقش قبلی را از cache حذف می‌کند", async () => {
+    const client = new QueryClient();
+    client.setQueryData(queryKeys.home.summary(), { total: 999 });
+    client.setQueryData(queryKeys.orders.detail("PF-1"), { calc: { total: 999 } });
+    vi.mocked(apiFetch).mockResolvedValue({ user: { ...ADMIN_USER, roles: ["production"], noMoney: true } });
+    const { result } = renderHook(() => useLoginMutation(), { wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> });
+    await act(async () => { await result.current.mutateAsync({ name: "production", password: "x" }); });
+    expect(client.getQueryData(queryKeys.home.summary())).toBeUndefined();
+    expect(client.getQueryData(queryKeys.orders.detail("PF-1"))).toBeUndefined();
+    expect(client.getQueryData(queryKeys.auth.me())).toMatchObject({ roles: ["production"], noMoney: true });
+  });
   it("ورود موفق → کاربر و ذخیره در cache کوئری me", async () => {
     vi.mocked(apiFetch).mockResolvedValue({ user: ADMIN_USER } as never);
     const { result } = renderHook(() => useLoginMutation(), wrapper());

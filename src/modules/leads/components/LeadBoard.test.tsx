@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@components/feedback";
 import { ApiError } from "@core/errors";
 import type { LeadListItem } from "../types/lead.types";
+import { setLeadFilters } from "../hooks/useLeadFilters";
 import { LeadBoard } from "./LeadBoard";
 
 vi.mock("@core/api", () => ({
@@ -94,6 +95,7 @@ function renderBoard(): { route: ReturnType<typeof vi.fn> } {
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
   window.localStorage.clear();
+  setLeadFilters({line: "prod", stage: "all", q: ""});
 });
 
 describe("حالت‌های کوئری (CD-09)", () => {

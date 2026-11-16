@@ -32,7 +32,7 @@ import { nextPrefixedId, SEQ_START } from "@core/database";
 import { conflict, notFound } from "@core/errors";
 import { isValidIranPhone, normalizePhone, roundToStep } from "@core/formatting";
 import type { Prisma } from "@prisma/client";
-import { stageLabel } from "../constants/STAGE";
+import { BOARD_STAGES, stageLabel } from "../constants/STAGE";
 import type { LeadStageKey } from "../constants/STAGE";
 export { reviveTarget } from "../constants/STAGE";
 import type { LeadLineKey } from "../constants/LINE";
@@ -127,6 +127,7 @@ export async function listLeads(query: ListQuery, scope: LeadListScope): Promise
   const where: Prisma.LeadWhereInput = {};
   if (query.line) where.line = query.line;
   if (query.stage) where.stage = query.stage;
+  if (query.source) where.source = query.source;
   if (scope.restrictToOwner) {
     where.ownerId = scope.userId;
   } else if (query.ownerId) {
@@ -142,7 +143,16 @@ export async function listLeads(query: ListQuery, scope: LeadListScope): Promise
     ];
   }
 
-  const [total, rows] = await Promise.all([
+  if (query.dueBefore) {
+    const candidateWhere = { ...where };
+    delete candidateWhere.stage;
+    const candidates = await prisma.lead.findMany({ where: candidateWhere, select: { id: true } });
+    const next = await nextAtMap(candidates.map((r) => r.id));
+    where.id = { in: candidates.filter((r) => { const due = next.get(r.id); return due && due <= query.dueBefore!; }).map((r) => r.id) };
+  }
+  const countWhere = { ...where };
+  delete countWhere.stage;
+  const [total, rows, counts, owners] = await Promise.all([
     prisma.lead.count({ where }),
     prisma.lead.findMany({
       where,
@@ -154,6 +164,12 @@ export async function listLeads(query: ListQuery, scope: LeadListScope): Promise
         owner: { select: { name: true } },
       },
     }),
+    Promise.all(BOARD_STAGES.map((stage) => prisma.lead.count({ where: { ...countWhere, stage } }))),
+    prisma.lead.findMany({
+      where: scope.restrictToOwner ? { ownerId: scope.userId } : { ownerId: { not: null } },
+      distinct: ["ownerId"],
+      select: { ownerId: true, owner: { select: { name: true } } },
+    }),
   ]);
 
   const nextAt = await nextAtMap(rows.map((r) => r.id));
@@ -161,6 +177,8 @@ export async function listLeads(query: ListQuery, scope: LeadListScope): Promise
   return {
     items: rows.map((r) => toListItem(r, nextAt.get(r.id) ?? null)),
     total,
+    stageCounts: Object.fromEntries(BOARD_STAGES.map((stage, index) => [stage, counts[index] ?? 0])),
+    owners: owners.flatMap((r) => r.ownerId && r.owner ? [{ id: r.ownerId, name: r.owner.name }] : []),
     page: query.page,
     pageSize: query.pageSize,
   };

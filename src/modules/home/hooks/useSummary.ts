@@ -10,9 +10,10 @@ import { queryKeys } from "@core/query";
 import type { DashboardSummary } from "../services/summary.service";
 
 /** GET /api/home/summary — خلاصه عملکرد داشبورد (PHASE_07 §۱۰). */
-export function useSummaryQuery() {
+export function useSummaryQuery(enabled = true) {
   return useQuery<DashboardSummary, ApiError>({
     queryKey: queryKeys.home.summary(),
+    enabled,
     queryFn: () => apiFetch<DashboardSummary>("/api/home/summary"),
   });
 }

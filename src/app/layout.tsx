@@ -1,7 +1,7 @@
 import localFont from "next/font/local";
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { ErrorBoundary, ToastProvider } from "@components/feedback";
+import { Suspense, type ReactNode } from "react";
+import { ErrorBoundary, ToastProvider, LoadingState } from "@components/feedback";
 import { AppShell } from "@components/layout";
 import { QueryProvider } from "@core/query";
 import "./globals.css";
@@ -28,7 +28,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <ErrorBoundary>
           <QueryProvider>
             <ToastProvider>
-              <AppShell>{children}</AppShell>
+              <Suspense fallback={<LoadingState label="در حال بارگذاری…" />}>
+                <AppShell>{children}</AppShell>
+              </Suspense>
             </ToastProvider>
           </QueryProvider>
         </ErrorBoundary>

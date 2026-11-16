@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
 
@@ -15,11 +16,20 @@ export type AppShellProps = {
  */
 export function AppShell({ children }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname();
   const close = () => setDrawerOpen(false);
+
+  useEffect(() => {
+    const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setDrawerOpen(false); };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, []);
+
+  if (pathname === "/login") return <>{children}</>;
 
   return (
     <div className="app-shell">
-      <Navbar onOpenSidebar={() => setDrawerOpen(true)} />
+      <Navbar sidebarOpen={drawerOpen} onOpenSidebar={() => setDrawerOpen((open) => !open)} />
       <div className="app-body">
         <Sidebar open={drawerOpen} onClose={close} />
         {drawerOpen ? (

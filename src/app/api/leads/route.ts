@@ -41,6 +41,8 @@ export async function GET(req: Request): Promise<Response> {
         line: url.searchParams.get("line") ?? undefined,
         stage: url.searchParams.get("stage") ?? undefined,
         ownerId: url.searchParams.get("ownerId") ?? undefined,
+        source: url.searchParams.get("source") ?? undefined,
+        dueBefore: url.searchParams.get("dueBefore") ?? undefined,
       },
       faErrorMap,
     );

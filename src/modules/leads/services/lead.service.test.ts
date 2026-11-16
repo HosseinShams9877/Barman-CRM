@@ -136,6 +136,15 @@ beforeEach(() => {
 });
 
 describe("listLeads — محدوده دید و فیلترها", () => {
+  it("stage totals cover all pages and owner choices preserve the viewing scope", async () => {
+    mocked.lead.count.mockImplementation(async ({ where }) => where.stage === "raw" ? 137 : where.stage === "opp" ? 12 : 0);
+    mocked.lead.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([{ ownerId: "u1", owner: { name: "کارشناس" } }]);
+    const out = await listLeads({ ...LIST_QUERY, stage: "raw", source: "سایت", page: 2 }, { restrictToOwner: true, userId: "u1" });
+    expect(out.stageCounts).toMatchObject({ raw: 137, opp: 12 });
+    expect(out.owners).toEqual([{ id: "u1", name: "کارشناس" }]);
+    for (const [args] of mocked.lead.count.mock.calls) expect(args.where).toMatchObject({ ownerId: "u1", source: "سایت" });
+    expect(mocked.lead.findMany.mock.calls[1]?.[0].where).toEqual({ ownerId: "u1" });
+  });
   it("نقش sales: فیلتر ownerId در سرور تحمیل می‌شود (leads.viewAll)", async () => {
     mocked.lead.count.mockResolvedValue(0);
     mocked.lead.findMany.mockResolvedValue([]);

@@ -19,6 +19,7 @@ vi.mock("@modules/auth/hooks/useAuth", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const mocked = (await import("@modules/auth/hooks/useAuth")) as unknown as {
@@ -77,7 +78,7 @@ describe("Sidebar — رفع باگ ناوبری (هر آیتم <a> با href د
     expect(linkOf("ستون‌های بورد سرنخ").getAttribute("href")).toBe("/admin/leadcols");
     expect(linkOf("فهرست‌ها (منبع سرنخ، سمت‌ها …)").getAttribute("href")).toBe("/admin/lists");
     expect(linkOf("تأمین‌کننده‌ها و نمایندگی‌ها").getAttribute("href")).toBe("/admin/suppliers");
-    expect(linkOf("مشتریان").getAttribute("href")).toBe("/customers");
+    expect(linkOf("مشتریان").getAttribute("href")).toBe("/admin/customers");
   });
 
   it("management: گروه‌بندی و آیتم‌های نقش مطابق Demo", () => {
@@ -95,10 +96,11 @@ describe("Sidebar — رفع باگ ناوبری (هر آیتم <a> با href د
       screen.getByText(label).closest("a") as HTMLAnchorElement;
 
     expect(linkOf("میز کار").getAttribute("href")).toBe("/");
-    expect(linkOf("پیگیری سرنخ‌ها").getAttribute("href")).toBe("/leads");
+    expect(screen.queryByText("پیگیری سرنخ‌ها")).not.toBeInTheDocument();
     expect(linkOf("مسیر سفارش‌ها").getAttribute("href")).toBe("/orders");
-    expect(linkOf("تأیید خریدها").getAttribute("href")).toBe("/buys");
-    expect(linkOf("دریافتنی‌ها و پرداختنی‌ها").getAttribute("href")).toBe("/finance");
+    expect(linkOf("تأیید خریدها").getAttribute("href")).toBe("/buys?status=req");
+    expect(linkOf("دریافتنی‌ها").getAttribute("href")).toBe("/finance#rec");
+    expect(linkOf("پرداختنی‌ها").getAttribute("href")).toBe("/finance#pay");
     expect(linkOf("تولید").getAttribute("href")).toBe("/production");
     expect(linkOf("موجودی انبارها").getAttribute("href")).toBe("/stock");
     expect(linkOf("گزارش‌ها").getAttribute("href")).toBe("/reports");
@@ -124,7 +126,7 @@ describe("Sidebar — رفع باگ ناوبری (هر آیتم <a> با href د
     expect(linkOf("سفارش‌های من").getAttribute("href")).toBe("/orders");
     expect(linkOf("موجودی محصولات").getAttribute("href")).toBe("/stock");
     expect(linkOf("محصولات و قیمت‌ها").getAttribute("href")).toBe("/admin/products");
-    expect(linkOf("مشتریان").getAttribute("href")).toBe("/customers");
+    expect(linkOf("مشتریان").getAttribute("href")).toBe("/admin/customers");
     // بدون مجوز admin — آیتم‌های مدیریت نبود باشند
     expect(screen.queryByText("تنظیمات عمومی")).not.toBeInTheDocument();
     expect(screen.queryByText("کاربران و دسترسی‌ها")).not.toBeInTheDocument();
@@ -158,6 +160,9 @@ describe("Sidebar — رفع باگ ناوبری (هر آیتم <a> با href د
     setUser({ id: "u5", name: "sales", title: null, roles: ["sales"], permissions: ["leads.view"], noMoney: true });
     render(<Sidebar open={true} onClose={onClose} />);
     const link = screen.getByText("پیگیری سرنخ‌ها").closest("a") as HTMLAnchorElement;
+    // This unit checks the close callback. Actual navigation is exercised in Chrome;
+    // jsdom cannot follow a link to a different document.
+    link.addEventListener("click", (event) => event.preventDefault(), { once: true });
     link.click();
     expect(onClose).toHaveBeenCalledTimes(1);
   });

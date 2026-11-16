@@ -69,16 +69,16 @@
   }
 
   .btn-ghost {
-    background-color: transparent;
+    background-color: var(--color-surface);
     color: var(--color-text-secondary);
-    border-color: transparent;
+    border-color: var(--color-border);
     box-shadow: none;
   }
 
   .btn-ghost:hover:not(:disabled) {
-    background-color: var(--color-primary-subtle);
+    background-color: var(--color-btn-hover-bg);
     color: var(--color-primary-strong);
-    border-color: var(--color-primary-subtle);
+    border-color: var(--color-btn-hover-border);
   }
 
   .btn-danger {

@@ -41,7 +41,9 @@ export function useLoginMutation() {
       });
       return data.user;
     },
-    onSuccess: (user) => {
+    onSuccess: async (user) => {
+      await queryClient.cancelQueries();
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "auth" });
       queryClient.setQueryData(queryKeys.auth.me(), user);
     },
   });
@@ -54,7 +56,9 @@ export function useLogoutMutation() {
     mutationFn: async () => {
       await apiFetch<void>("/api/auth/logout", { method: "POST" });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.cancelQueries();
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "auth" });
       queryClient.setQueryData(queryKeys.auth.me(), null);
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
     },

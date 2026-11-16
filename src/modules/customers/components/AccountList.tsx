@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHeader } from "@components/shared/PageHeader";
 import { Button, Card, DataTable, Dialog } from "@components/ui";
 import { EmptyState } from "@components/shared";
 import { ErrorState, LoadingState } from "@components/feedback";
@@ -74,14 +75,13 @@ export function AccountList() {
 
   return (
     <>
-      <div className="page-head">
-        <h1 className="h1">مشتریان</h1>
+      <PageHeader icon="users" title="مشتریان" description="اطلاعات مشتریان و مخاطبان؛ شماره‌های تماس و مشخصات هر حساب را اینجا نگه دارید.">
         {canCreate ? (
           <Button onClick={openCreate} leadingIcon={<span aria-hidden="true">+</span>}>
             حساب جدید
           </Button>
         ) : null}
-      </div>
+      </PageHeader>
 
       <Card>
         <form className="toolbar" onSubmit={onSearch} role="search">

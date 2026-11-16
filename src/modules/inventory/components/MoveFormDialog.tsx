@@ -27,6 +27,8 @@ import type { ManualEntryKind, Warehouse } from "../constants";
 export type MoveFormDialogProps = {
   open: boolean;
   onClose: () => void;
+  inline?: boolean;
+  defaultWarehouse?: Warehouse;
 };
 
 /** گزینه kind قابل نمایش — adj به دو جهت مجزا تجزیه می‌شود (دمو). */
@@ -59,13 +61,13 @@ const KIND_OPTIONS: Readonly<Record<Warehouse, readonly KindOption[]>> = {
  * فرم حرکت دستی — انتخاب انبار تعیین می‌کند کدام اقلام و kinds
  * قابل انتخاب‌اند (دمو: view جدا برای مواد و دپو).
  */
-export function MoveFormDialog({ open, onClose }: MoveFormDialogProps) {
+export function MoveFormDialog({ open, onClose, inline = false, defaultWarehouse = "raw" }: MoveFormDialogProps) {
   const toast = useToast();
   const createMove = useCreateMoveMutation();
   const materials = useCatalogMaterialsQuery();
   const products = useCatalogProductsQuery();
 
-  const [wh, setWh] = useState<Warehouse>("raw");
+  const [wh, setWh] = useState<Warehouse>(defaultWarehouse);
   const [kindIdx, setKindIdx] = useState(0);
   const [itemId, setItemId] = useState("");
   const [qty, setQty] = useState("");
@@ -132,6 +134,7 @@ export function MoveFormDialog({ open, onClose }: MoveFormDialogProps) {
 
   return (
     <Dialog
+      embedded={inline}
       open={open}
       title="ثبت حرکت انبار"
       description="ثبت دستی موجودی — حرکت‌های سیستمی (خرید/تولید/فروش) از عملیات مربوطه ثبت می‌شوند."

@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useUrlHash } from "@core/utils/useUrlHash";
+import { PageHeader } from "@components/shared/PageHeader";
+import { Icon } from "@components/ui/Icon";
 import { useMeQuery } from "@modules/auth/hooks/useAuth";
 import { ErrorState, LoadingState } from "@components/feedback";
 import { toFaDigits, formatMoney } from "@core/formatting";
-import { REPORT_DAYS, REPORT_KINDS, REPORT_KIND_LABELS, type ReportKind } from "../schemas/report-query.schema";
+import {
+  REPORT_DAYS,
+  REPORT_KINDS,
+  REPORT_KIND_LABELS,
+  type ReportKind,
+} from "../schemas/report-query.schema";
 import { useReportQuery } from "../hooks/useReports";
 import type { LeadsReport } from "../services/leads.report";
 import type { SalesReport } from "../services/sales.report";
@@ -22,25 +31,27 @@ export function ReportsPage() {
   const permissions = new Set(me.data?.permissions ?? []);
 
   // reports.js:6 — salesManager فقط سرنخ و فروش را می‌بیند.
-  const tabs = permissions.has("leads.view")
-    ? REPORT_KINDS
-    : REPORT_KINDS.filter((k) => k !== "leads");
-  const [kind, setKind] = useState<ReportKind>(tabs[0] ?? "sales");
+  const tabs: readonly ReportKind[] = me.data?.roles.includes("salesManager")
+    ? REPORT_KINDS.filter((k) => k === "leads" || k === "sales")
+    : permissions.has("leads.view")
+      ? REPORT_KINDS
+      : REPORT_KINDS.filter((k) => k !== "leads");
+  const hash = useUrlHash().slice(1) as ReportKind;
+  const kind = tabs.includes(hash) ? hash : (tabs[0] ?? "sales");
   const [days, setDays] = useState<number>(90);
   const [line, setLine] = useState<"prod" | "agency" | null>(null);
 
   const query = useReportQuery({ kind, days, line });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="h1">گزارش‌ها</h1>
-        <p className="hint">
-          همه اعداد از خود سرنخ‌ها، سفارش‌ها، تولید و خریدها حساب می‌شود (reports.js:61).
-        </p>
-      </div>
+    <div className="reports-workspace">
+      <PageHeader
+        icon="chart"
+        title="گزارش‌ها"
+        description="همه اعداد از خود سرنخ‌ها، سفارش‌ها، تولید و خریدها حساب می‌شود."
+      />
 
-      <div className="flex flex-wrap gap-4" role="group" aria-label="فیلتر گزارش">
+      <div className="card report-filters" role="group" aria-label="فیلتر گزارش">
         <div className="field">
           <label className="field-label" htmlFor="r-days">
             بازه
@@ -53,7 +64,14 @@ export function ReportsPage() {
           >
             {REPORT_DAYS.map((d) => (
               <option key={d} value={d}>
-                {toFaDigits(d)} روز اخیر
+                {(
+                  {
+                    30: "۳۰ روز اخیر",
+                    90: "۳ ماه اخیر",
+                    180: "۶ ماه اخیر",
+                    365: "یک سال",
+                  } as Record<number, string>
+                )[d] ?? `${toFaDigits(d)} روز اخیر`}
               </option>
             ))}
           </select>
@@ -77,21 +95,15 @@ export function ReportsPage() {
         ) : null}
       </div>
 
-      <div className="seg-tabs" role="tablist" aria-label="نوع گزارش">
+      <div className="seg-tabs card" role="tablist" aria-label="نوع گزارش">
         {tabs.map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="tab"
-            aria-selected={k === kind}
-            onClick={() => setKind(k)}
-          >
+          <Link key={k} href={`#${k}`} role="tab" aria-selected={k === kind}>
             {REPORT_KIND_LABELS[k]}
-          </button>
+          </Link>
         ))}
       </div>
 
-      <section className="card" role="tabpanel" aria-label={REPORT_KIND_LABELS[kind]}>
+      <section className="report-content" role="tabpanel" aria-label={REPORT_KIND_LABELS[kind]}>
         {query.isLoading ? (
           <LoadingState label="در حال محاسبه گزارش…" />
         ) : query.isError ? (
@@ -117,88 +129,144 @@ function LeadsView({ report }: { report: LeadsReport }) {
   }
   return (
     <div className="flex flex-col gap-6">
-      <div className="tbl-wrap">
-        <table className="tbl">
-          <caption className="sr-only">سرنخ‌ها به تفکیک منبع ورود</caption>
-          <thead>
-            <tr>
-              <th scope="col">منبع</th>
-              <th scope="col">تعداد ورود</th>
-              <th scope="col">شناسایی شد (فرصت)</th>
-              <th scope="col">پیش‌فاکتور</th>
-              <th scope="col">خرید قطعی</th>
-              <th scope="col">نرخ تبدیل</th>
-              <th scope="col">از دست رفته</th>
-              {report.bySource[0]?.rev !== undefined ? <th scope="col">فروش (تومان)</th> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {report.bySource.map((row) => (
-              <tr key={row.source}>
-                <td><b>{row.source}</b></td>
-                <td>{toFaDigits(row.n)}</td>
-                <td>{toFaDigits(row.opp)}</td>
-                <td>{toFaDigits(row.pf)}</td>
-                <td><b>{toFaDigits(row.won)}</b></td>
-                <td>{row.n > 0 ? toFaDigits(Math.round((row.won / row.n) * 100)) : "—"}%</td>
-                <td>{toFaDigits(row.lost)}</td>
-                {row.rev !== undefined ? <td>{formatMoney(row.rev)}</td> : null}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="grid2">
+      <section className="card">
+        <h3 className="report-section-title">
+          <Icon name="globe" size="icon-sm" />
+          سرنخ‌ها به تفکیک منبع ورود
+        </h3>
         <div className="tbl-wrap">
           <table className="tbl">
-            <caption className="sr-only">عملکرد کارشناس‌ها</caption>
+            <caption className="sr-only">سرنخ‌ها به تفکیک منبع ورود</caption>
             <thead>
               <tr>
-                <th scope="col">کارشناس</th>
-                <th scope="col">سرنخ</th>
-                <th scope="col">فرصت</th>
-                <th scope="col">قطعی</th>
-                {report.byOwner[0]?.rev !== undefined ? <th scope="col">فروش</th> : null}
-                <th scope="col">پیگیری معوق</th>
+                <th scope="col">منبع</th>
+                <th scope="col">تعداد ورود</th>
+                <th scope="col">
+                  <span className="sr-only">مقایسه تعداد ورود</span>
+                </th>
+                <th scope="col">شناسایی شد (فرصت)</th>
+                <th scope="col">پیش‌فاکتور</th>
+                <th scope="col">خرید قطعی</th>
+                <th scope="col">نرخ تبدیل</th>
+                <th scope="col">از دست رفته</th>
+                {report.bySource[0]?.rev !== undefined ? <th scope="col">فروش (ریال)</th> : null}
               </tr>
             </thead>
             <tbody>
-              {report.byOwner.map((row) => (
-                <tr key={row.ownerId}>
-                  <td><b>{row.ownerName}</b></td>
+              {report.bySource.map((row) => (
+                <tr key={row.source}>
+                  <td>
+                    <b>{row.source}</b>
+                  </td>
                   <td>{toFaDigits(row.n)}</td>
-                  <td>{toFaDigits(row.opp)}</td>
-                  <td>{toFaDigits(row.won)}</td>
+                  <td>
+                    <ReportBar
+                      value={row.n}
+                      max={Math.max(1, ...report.bySource.map((source) => source.n))}
+                    />
+                  </td>
+                  <td>
+                    {toFaDigits(row.opp)}
+                    <small>
+                      {row.n ? toFaDigits(Math.round((row.opp / row.n) * 100)) + "٪" : "—"}
+                    </small>
+                  </td>
+                  <td>{toFaDigits(row.pf)}</td>
+                  <td>
+                    <b>{toFaDigits(row.won)}</b>
+                  </td>
+                  <td>{row.n > 0 ? toFaDigits(Math.round((row.won / row.n) * 100)) : "—"}%</td>
+                  <td>{toFaDigits(row.lost)}</td>
                   {row.rev !== undefined ? <td>{formatMoney(row.rev)}</td> : null}
-                  <td>{row.due > 0 ? <span className="tag-chip" data-tone="warning">{toFaDigits(row.due)}</span> : "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </section>
 
-        <div className="tbl-wrap">
-          <table className="tbl">
-            <caption className="sr-only">دلیل از دست رفتن</caption>
-            <tbody>
-              {report.lostReasons.length > 0 ? (
-                report.lostReasons.map((row) => (
-                  <tr key={row.reason}>
-                    <td>{row.reason}</td>
-                    <td><b>{toFaDigits(row.n)}</b></td>
-                  </tr>
-                ))
-              ) : (
+      <div className="report-columns">
+        <section className="card">
+          <h3 className="report-section-title">
+            <Icon name="users" size="icon-sm" />
+            عملکرد کارشناس‌ها
+          </h3>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <caption className="sr-only">عملکرد کارشناس‌ها</caption>
+              <thead>
                 <tr>
-                  <td>در این بازه موردی نیست.</td>
+                  <th scope="col">کارشناس</th>
+                  <th scope="col">سرنخ</th>
+                  <th scope="col">فرصت</th>
+                  <th scope="col">قطعی</th>
+                  {report.byOwner[0]?.rev !== undefined ? <th scope="col">فروش</th> : null}
+                  <th scope="col">پیگیری معوق</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {report.byOwner.map((row) => (
+                  <tr key={row.ownerId}>
+                    <td>
+                      <b>{row.ownerName}</b>
+                    </td>
+                    <td>{toFaDigits(row.n)}</td>
+                    <td>{toFaDigits(row.opp)}</td>
+                    <td>{toFaDigits(row.won)}</td>
+                    {row.rev !== undefined ? <td>{formatMoney(row.rev)}</td> : null}
+                    <td>
+                      {row.due > 0 ? (
+                        <span className="tag-chip" data-tone="warning">
+                          {toFaDigits(row.due)}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="card">
+          <h3 className="report-section-title">
+            <Icon name="x" size="icon-sm" />
+            دلیل از دست رفتن
+          </h3>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <caption className="sr-only">دلیل از دست رفتن</caption>
+              <tbody>
+                {report.lostReasons.length > 0 ? (
+                  report.lostReasons.map((row) => (
+                    <tr key={row.reason}>
+                      <td>{row.reason}</td>
+                      <td>
+                        <b>{toFaDigits(row.n)}</b>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td>در این بازه موردی نیست.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
+  );
+}
+
+function ReportBar({ value, max }: { value: number; max: number }) {
+  return (
+    <span className="report-bar" aria-hidden="true">
+      <i style={{ width: `${max > 0 ? Math.round((value / max) * 100) : 0}%` }} />
+    </span>
   );
 }
 
@@ -214,7 +282,7 @@ function SalesView({ report }: { report: SalesReport }) {
         {report.tiles.total !== undefined ? (
           <div className="card dash-tile">
             <b>{formatMoney(report.tiles.total)}</b>
-            <span>جمع فروش (تومان)</span>
+            <span>جمع فروش (ریال)</span>
           </div>
         ) : null}
         <div className="card dash-tile">
@@ -223,58 +291,75 @@ function SalesView({ report }: { report: SalesReport }) {
         </div>
       </div>
 
-      <div className="tbl-wrap">
-        <table className="tbl">
-          <caption className="sr-only">فروش به تفکیک محصول</caption>
-          <thead>
-            <tr>
-              <th scope="col">محصول</th>
-              <th scope="col">مقدار</th>
-              {report.byProduct[0]?.amount !== undefined ? <th scope="col">مبلغ</th> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {report.byProduct.length > 0 ? (
-              report.byProduct.map((row) => (
-                <tr key={row.productId}>
-                  <td>
-                    <b>{row.name}</b> <small className="ltr">{row.code}</small>
-                  </td>
-                  <td>
-                    {toFaDigits(row.qty)} {row.unit}
-                  </td>
-                  {row.amount !== undefined ? <td><b>{formatMoney(row.amount)}</b></td> : null}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td>در این بازه فروشی ثبت نشده است.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {report.byMonth.length > 0 ? (
+      <section className="card">
+        <h3 className="report-section-title">
+          <Icon name="box" size="icon-sm" />
+          فروش به تفکیک محصول
+        </h3>
         <div className="tbl-wrap">
           <table className="tbl">
-            <caption className="sr-only">فروش ماهانه</caption>
+            <caption className="sr-only">فروش به تفکیک محصول</caption>
             <thead>
               <tr>
-                <th scope="col">ماه</th>
-                <th scope="col">فروش (تومان)</th>
+                <th scope="col">محصول</th>
+                <th scope="col">مقدار</th>
+                {report.byProduct[0]?.amount !== undefined ? <th scope="col">مبلغ</th> : null}
               </tr>
             </thead>
             <tbody>
-              {report.byMonth.map((row) => (
-                <tr key={row.month}>
-                  <td>{toFaDigits(row.month)}</td>
-                  <td><b>{formatMoney(row.total)}</b></td>
+              {report.byProduct.length > 0 ? (
+                report.byProduct.map((row) => (
+                  <tr key={row.productId}>
+                    <td>
+                      <b>{row.name}</b> <small className="ltr">{row.code}</small>
+                    </td>
+                    <td>
+                      {toFaDigits(row.qty)} {row.unit}
+                    </td>
+                    {row.amount !== undefined ? (
+                      <td>
+                        <b>{formatMoney(row.amount)}</b>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td>در این بازه فروشی ثبت نشده است.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
+      </section>
+      {report.byMonth.length > 0 ? (
+        <section className="card">
+          <h3 className="report-section-title">
+            <Icon name="chart" size="icon-sm" />
+            فروش ماهانه
+          </h3>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <caption className="sr-only">فروش ماهانه</caption>
+              <thead>
+                <tr>
+                  <th scope="col">ماه</th>
+                  <th scope="col">فروش (ریال)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.byMonth.map((row) => (
+                  <tr key={row.month}>
+                    <td>{toFaDigits(row.month)}</td>
+                    <td>
+                      <b>{formatMoney(row.total)}</b>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       ) : null}
     </div>
   );
@@ -344,25 +429,33 @@ function FinView({ report }: { report: FinReport }) {
         </div>
       </div>
 
-      <div className="tbl-wrap">
-        <table className="tbl">
-          <caption className="sr-only">خروجی پول به تفکیک نوع</caption>
-          <tbody>
-            {report.expensesByKind.length > 0 ? (
-              report.expensesByKind.map((row) => (
-                <tr key={row.kind}>
-                  <td>{row.kind}</td>
-                  <td><b>{formatMoney(row.amount)}</b></td>
+      <section className="card">
+        <h3 className="report-section-title">
+          <Icon name="chart" size="icon-sm" />
+          خروجی پول به تفکیک نوع
+        </h3>
+        <div className="tbl-wrap">
+          <table className="tbl">
+            <caption className="sr-only">خروجی پول به تفکیک نوع</caption>
+            <tbody>
+              {report.expensesByKind.length > 0 ? (
+                report.expensesByKind.map((row) => (
+                  <tr key={row.kind}>
+                    <td>{row.kind}</td>
+                    <td>
+                      <b>{formatMoney(row.amount)}</b>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td>در این بازه خروجی پولی ثبت نشده است.</td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td>در این بازه خروجی پولی ثبت نشده است.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

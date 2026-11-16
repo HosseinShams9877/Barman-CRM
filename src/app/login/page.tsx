@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button, Input } from "@components/ui";
 import { useToast } from "@components/feedback";
 import { ApiError } from "@core/errors";
@@ -25,14 +25,6 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
-  // موفقیت ورود → رفتن به خانه (کوکی HttpOnly هم‌اکنون ست شده است)
-  useEffect(() => {
-    if (login.data) {
-      toast.push(`خوش آمدید، ${login.data.name}`, "success");
-      router.replace("/");
-    }
-  }, [login.data, router, toast]);
-
   function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     setFormError(null);
@@ -53,6 +45,10 @@ export default function LoginPage() {
 
     setFieldErrors({});
     login.mutate(parsed.data, {
+      onSuccess: (user) => {
+        toast.push(`خوش آمدید، ${user.name}`, "success");
+        router.replace(user.roles.includes("admin") ? "/admin" : user.roles.includes("production") ? "/production" : "/");
+      },
       onError: (err: ApiError) => {
         // ۴۰۱ پیام فارسی یکسان «نام کاربری یا رمز عبور نادرست است» را دارد
         setFormError(err.message);
@@ -63,6 +59,7 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card card">
+        <div className="login-brand"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 10h36v28H6z" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinejoin="round" /><path d="M6 20c6-6 12 6 18 0s12 6 18 0M6 29c6-6 12 6 18 0s12 6 18 0" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" /></svg><span><b>بارمان</b><small>BARMAN 3D WORKS — سامانه یکپارچه فروش، تولید و انبار</small></span></div>
         <h1 className="login-title h2">ورود به سامانه بارمان</h1>
         <p className="login-hint text-muted">
           برای ادامه، نام کاربری و رمز عبور خود را وارد کنید.

@@ -107,7 +107,7 @@ export function ReceivablesView({ onNewIncome }: ReceivablesViewProps) {
             <DataTable
               caption={`مطالبات ${g.accountName}`}
               rowKey={(row: Row) =>
-                `${(row as ReceivableRow).orderId ?? ""}-${(row as ReceivableRow).kind}-${(row as ReceivableRow).due ?? ""}`
+                row.chequeId ?? `${(row as ReceivableRow).orderId ?? ""}-${(row as ReceivableRow).kind}-${(row as ReceivableRow).due ?? ""}`
               }
               rows={g.rows}
               columns={[

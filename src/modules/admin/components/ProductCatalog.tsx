@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, DataTable, Dialog, Input } from "@components/ui";
+import { Icon } from "@components/ui/Icon";
 import { ErrorState, LoadingState } from "@components/feedback";
 import { EmptyState } from "@components/shared";
 import { useToast } from "@components/feedback";
@@ -13,11 +14,7 @@ import {
   useCreateProductMutation,
   useUpdateProductMutation,
 } from "../hooks/useAdmin";
-import {
-  PRODUCT_LINES,
-  PRODUCT_LINE_LABELS,
-  PRODUCT_UNITS,
-} from "../constants/units";
+import { PRODUCT_LINES, PRODUCT_LINE_LABELS, PRODUCT_UNITS } from "../constants/units";
 
 type Props = {
   /** مجوز ویرایش (catalog.products.edit) — از AdminPage محاسبه می‌شود. */
@@ -80,6 +77,8 @@ export function ProductCatalog({ canEdit }: Props) {
   const [editing, setEditing] = useState<ProductAdminRow | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+  const [line, setLine] = useState("");
 
   const openCreate = (): void => {
     setEditing(null);
@@ -211,7 +210,7 @@ export function ProductCatalog({ canEdit }: Props) {
           </select>
         </div>
         <Input
-          label="قیمت فروش هر واحد (تومان)"
+          label="قیمت فروش هر واحد (ریال)"
           name="price"
           inputMode="numeric"
           value={form.price}
@@ -275,17 +274,48 @@ export function ProductCatalog({ canEdit }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {canEdit ? (
-        <div className="flex justify-end">
-          <Button variant="primary" onClick={openCreate}>
+    <div>
+      <div className="admin-toolbar">
+        <input
+          className="input"
+          type="search"
+          aria-label="جستجوی محصولات"
+          placeholder="نام، کد یا دسته"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        <select
+          className="select"
+          aria-label="نوع محصول"
+          value={line}
+          onChange={(event) => setLine(event.target.value)}
+        >
+          <option value="">همه ({toFaDigits(items.length)})</option>
+          {PRODUCT_LINES.map((key) => (
+            <option key={key} value={key}>
+              {PRODUCT_LINE_LABELS[key]} (
+              {toFaDigits(items.filter((product) => product.line === key).length)})
+            </option>
+          ))}
+        </select>
+        {canEdit ? (
+          <Button
+            variant="primary"
+            leadingIcon={<Icon name="plus" size="icon-sm" />}
+            onClick={openCreate}
+          >
             محصول جدید
           </Button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       <DataTable<ProductAdminRow>
         caption="فهرست محصولات"
-        rows={items}
+        rows={items.filter(
+          (product) =>
+            (!line || product.line === line) &&
+            (!search.trim() ||
+              (product.name + product.code + product.category).includes(search.trim())),
+        )}
         rowKey={(p) => p.id}
         columns={[
           { key: "code", header: "کد", render: (p) => <b className="ltr">{p.code}</b> },
@@ -320,14 +350,26 @@ export function ProductCatalog({ canEdit }: Props) {
           {
             key: "active",
             header: "وضعیت",
-            render: (p) => (p.active ? <span className="tag-chip" data-tone="success">فعال</span> : <span className="tag-chip">غیرفعال</span>),
+            render: (p) =>
+              p.active ? (
+                <span className="tag-chip" data-tone="success">
+                  فعال
+                </span>
+              ) : (
+                <span className="tag-chip">غیرفعال</span>
+              ),
           },
           {
             key: "actions",
             header: "",
             render: (p) =>
               canEdit ? (
-                <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leadingIcon={<Icon name="edit" size="icon-sm" />}
+                  onClick={() => openEdit(p)}
+                >
                   ویرایش
                 </Button>
               ) : null,

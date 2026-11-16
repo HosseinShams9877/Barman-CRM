@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { LoadingState } from "@components/feedback";
+import { PageHeader } from "@components/shared/PageHeader";
+import type { IconName } from "@components/ui/Icon";
 import { useMeQuery } from "@modules/auth/hooks/useAuth";
 import { AccountList } from "@modules/customers/components/AccountList";
 import { ADMIN_TABS, type AdminTabKey } from "../constants/tabs";
@@ -12,6 +15,11 @@ import { UserManager } from "./UserManager";
 import { ListsEditor } from "./ListsEditor";
 import { SettingsPanel } from "./SettingsPanel";
 import { LeadColsPanel } from "./LeadColsPanel";
+
+const TAB_ICONS: Readonly<Record<AdminTabKey, IconName>> = {
+  products: "box", materials: "flask", bom: "clipboard", customers: "users",
+  suppliers: "store", users: "user", lists: "list", leadcols: "grid", settings: "gear",
+};
 
 /**
  * صفحه مدیریت — تعریف و تنظیمات (PHASE_07 §۱۰ / فاز ۸: ۹ تب Demo).
@@ -28,10 +36,10 @@ import { LeadColsPanel } from "./LeadColsPanel";
 export function AdminPage({ initialTab = "products" }: { initialTab?: AdminTabKey }) {
   const me = useMeQuery();
   const permissions = new Set(me.data?.permissions ?? []);
-  const [active, setActive] = useState<AdminTabKey>(initialTab);
-
   const visibleTabs = ADMIN_TABS.filter((t) => permissions.has(t.read));
-  const current = ADMIN_TABS.find((t) => t.key === active) ?? visibleTabs[0];
+  const current = visibleTabs.find((t) => t.key === initialTab) ?? visibleTabs[0];
+
+  if (me.isLoading) return <LoadingState label="بارگذاری نشست…" />;
 
   if (!current) {
     return <p className="hint">شما به بخش مدیریت دسترسی ندارید.</p>;
@@ -41,30 +49,22 @@ export function AdminPage({ initialTab = "products" }: { initialTab?: AdminTabKe
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="page-head">
-        <h1 className="h1">تعاریف و تنظیمات</h1>
-        <p className="hint">
-          {canEdit
-            ? "این بخش را می‌توانید تغییر دهید؛ تغییرات همان لحظه در همه پنل‌ها اعمال می‌شود."
-            : "فقط مشاهده"}
-        </p>
-      </div>
+      {current.key !== "customers" ? <PageHeader title={current.label} icon={TAB_ICONS[current.key]} description="اطلاعات پایه شرکت؛ تغییرات این بخش در همه پنل‌ها اعمال می‌شود." /> : null}
 
-      <div className="seg-tabs" role="tablist" aria-label="بخش‌های مدیریت">
+      {!me.data?.roles.includes("admin") ? <div className="seg-tabs" role="tablist" aria-label="بخش‌های مدیریت">
         {visibleTabs.map((t) => (
-          <button
+          <Link
             key={t.key}
-            type="button"
+            href={`/admin/${t.key}`}
             role="tab"
             aria-selected={t.key === current.key}
-            onClick={() => setActive(t.key)}
           >
             {t.label}
-          </button>
+          </Link>
         ))}
-      </div>
+      </div> : null}
 
-      <section className="card" role="tabpanel" aria-label={current.label}>
+      <section className={current.key === "customers" ? "stack gap-4" : ["products", "materials", "suppliers", "users"].includes(current.key) ? "card admin-table-panel" : "card"} role="tabpanel" aria-label={current.label}>
         {current.key === "products" ? <ProductCatalog canEdit={canEdit} /> : null}
         {current.key === "materials" ? <MaterialCatalog canEdit={canEdit} /> : null}
         {current.key === "bom" ? <BomEditor canEdit={canEdit} /> : null}

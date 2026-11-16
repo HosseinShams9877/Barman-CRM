@@ -34,6 +34,9 @@
  *    تجاوز کند — در registerPayment / registerCheque بررسی می‌شود.
  */
 import { z } from "zod";
+import { ORDER_BUCKETS } from "../constants/buckets";
+import { isIncompleteCheque } from "../lib/cheque";
+import { ROLE_TASKS, matchesTask } from "@modules/home/constants/tasks";
 import { instantToJalaliIso, startOfToday } from "@core/calendar";
 import { prisma } from "@core/database/client";
 import { nextPrefixedId, newMoveId } from "@core/database";
@@ -94,6 +97,7 @@ export type Actor = {
  * نقش sales فقط سفارش‌های خودش را می‌بیند (تعیین در Route Handler).
  */
 export type OrderListScope = {
+  role?: Role;
   restrictToOwner: boolean;
   userId: string;
 };
@@ -199,7 +203,7 @@ export function canActOnStage(order: { status: string; stage: number; ownerId: s
 
 // --- کمک‌ها ----------------------------------------------------------------
 
-const MONEY_RE = /تومان|چک|واریز|پرداخت|پیش‌فاکتور|پیش فاکتور|تخفیف|قیمت|مبلغ/;
+const MONEY_RE = /ریال|تومان|چک|واریز|پرداخت|پیش‌فاکتور|پیش فاکتور|تخفیف|قیمت|مبلغ/;
 
 /** شماره مرحله → کلید مرحله. */
 function stageKeyOf(step: number): OrderStageKey | null {
@@ -312,6 +316,10 @@ export async function listOrders(
   const where: Prisma.OrderWhereInput = {};
   if (params.stage !== null) where.stage = params.stage;
   if (params.status !== null) where.status = params.status;
+  const bucket = ORDER_BUCKETS.find((b) => b.key === params.bucket);
+  if (bucket) { where.stage = { in: [...bucket.stages] }; where.status = "open"; }
+  if (params.bucket === "mine" || params.incomplete) where.status = "open";
+  if (params.overdue) where.due = { lt: BigInt(Date.now()) };
   if (scope.restrictToOwner) {
     where.ownerId = scope.userId;
   } else if (params.ownerId !== null) {
@@ -323,6 +331,16 @@ export async function listOrders(
       { account: { name: { contains: params.q } } },
       { account: { contacts: { some: { name: { contains: params.q } } } } },
     ];
+  }
+
+  if (params.incomplete || params.bucket === "mine") {
+    const candidates = await prisma.order.findMany({ where, select: { id: true, stage: true, ownerId: true, due: true, cheques: true } });
+    const tasks = scope.role ? ROLE_TASKS[scope.role].filter((t) => !t.info) : [];
+    where.id = { in: candidates.filter((o) => {
+      const incompleteCheques = o.cheques.filter(isIncompleteCheque).length;
+      if (params.incomplete && !(o.stage >= 6 && incompleteCheques > 0)) return false;
+      return params.bucket !== "mine" || tasks.some((task) => matchesTask({ id: o.id, stage: o.stage, ownerId: o.ownerId, due: Number(o.due), customer: "", incompleteCheques }, task, scope.userId, Date.now()));
+    }).map((o) => o.id) };
   }
 
   const [total, rows] = await Promise.all([
@@ -423,8 +441,16 @@ function stripDetail(detail: OrderDetail): OrderDetailNoMoney {
     const { price, discount, ...restItem } = it;
     return restItem as OrderItemRowNoMoney;
   });
+  const payments = detail.payments.map(({ amount, ...payment }) => {
+    void amount;
+    return payment;
+  });
+  const cheques = detail.cheques.map(({ amount, ...cheque }) => {
+    void amount;
+    return cheque;
+  });
   const stageLog = detail.stageLog.filter((l) => !MONEY_RE.test(l.note));
-  return { ...rest, items, stageLog } as unknown as OrderDetailNoMoney;
+  return { ...rest, items, payments, cheques, stageLog };
 }
 
 function toItemRow(it: OrderRow["items"][number]): OrderItemRow {

@@ -114,7 +114,7 @@ describe("حالت‌های کوئری (CD-09)", () => {
     mockList([]);
     renderList();
     expect(await screen.findByText("سفارشی وجود ندارد")).toBeInTheDocument();
-    expect(screen.getByText(/پیش‌فاکتوری ثبت نشده/)).toBeInTheDocument();
+    expect(screen.getByText(/نتیجه‌ای برای فیلترهای شما پیدا نشد/)).toBeInTheDocument();
   });
 
   it("لیست خالی با فیلتر → راهنمای فیلتر", async () => {
@@ -144,21 +144,21 @@ describe("ستون‌های پولی (R-32)", () => {
     mockList([ORDER]);
     renderList();
     await screen.findByText("شرکت نمونه");
-    expect(screen.getByText("مبلغ نهایی")).toBeInTheDocument();
-    expect(screen.getByText("مانده")).toBeInTheDocument();
+    expect(screen.getByText("مبلغ")).toBeInTheDocument();
+    expect(screen.queryByText("مانده")).not.toBeInTheDocument();
     expect(screen.getByText(/۲٬۲۰۰٬۰۰۰/)).toBeInTheDocument();
-    expect(screen.getByText(/۱٬۲۰۰٬۰۰۰/)).toBeInTheDocument();
+    expect(screen.queryByText(/۱٬۲۰۰٬۰۰۰/)).not.toBeInTheDocument();
   });
 
   it("نقش بدون money.view → بدون ستون‌های پولی", async () => {
     mockList([ORDER_NO_MONEY], 1, ME(["orders.view"]));
     renderList();
     await screen.findByText("شرکت نمونه");
-    expect(screen.queryByText("مبلغ نهایی")).not.toBeInTheDocument();
+    expect(screen.queryByText("مبلغ")).not.toBeInTheDocument();
     expect(screen.queryByText("مانده")).not.toBeInTheDocument();
     // ستون‌های غیرپولی همچنان موجودند
     expect(screen.getByText("اقلام")).toBeInTheDocument();
-    expect(screen.getByText("سررسید")).toBeInTheDocument();
+    expect(screen.getByText("مهلت")).toBeInTheDocument();
   });
 });
 

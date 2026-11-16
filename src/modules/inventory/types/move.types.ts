@@ -55,6 +55,7 @@ export type MoveListResult = {
  * f = max(0, h − r)؛ value فقط برای نقش‌های غیر-OPS.
  */
 export type StockRow = {
+  inTransit?: number;
   itemId: string;
   name: string;
   code: string;

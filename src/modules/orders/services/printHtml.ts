@@ -124,15 +124,18 @@ export function renderPrintOrder(order: PrintableOrder | PrintableOrderNoMoney):
 
   const itemRows = order.items
     .map((item) => {
-      const amount =
-        item.discount > 0
+      let moneyCells = "";
+      if (!noMoney && "price" in item) {
+        const amount = item.discount > 0
           ? money(Math.round(item.qty * item.price * (1 - item.discount / 100)))
           : money(item.qty * item.price);
+        moneyCells = `<td>${money(item.price)}</td><td>${fa(item.discount)}٪</td><td>${amount}</td>`;
+      }
       return `<tr>
   <td>${esc(item.productName)}</td>
   <td>${esc(item.color || "—")}</td>
   <td>${fa(item.qty)}</td>
-  ${noMoney ? "" : `<td>${money(item.price)}</td><td>${fa(item.discount)}٪</td><td>${amount}</td>`}
+  ${moneyCells}
 </tr>`;
     })
     .join("\n");

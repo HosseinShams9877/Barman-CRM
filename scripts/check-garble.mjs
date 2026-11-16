@@ -108,7 +108,8 @@ function walk(dir) {
     return;
   }
   for (const name of entries) {
-    if (name === "node_modules" || name === ".next" || name === ".git" || name.startsWith(".vanilla")) {
+    // .cache contains generated browser profiles/review logs, never application source.
+    if (name === "node_modules" || name === ".next" || name === ".git" || name === ".cache" || name.startsWith(".vanilla")) {
       continue;
     }
     if (name === DEMO) continue; // پوشه Demo فقط‌خواندنی است — بخشی از پروژه نیست

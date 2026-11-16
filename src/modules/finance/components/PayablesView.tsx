@@ -108,7 +108,7 @@ export function PayablesView({ onNewExpense }: PayablesViewProps) {
             <DataTable
               caption={`پرداختنی‌های ${g.supplierName}`}
               rowKey={(row: Row) =>
-                `${(row as PayableRow).buyId ?? ""}-${(row as PayableRow).kind}-${(row as PayableRow).due ?? ""}`
+                row.chequeId ?? `${(row as PayableRow).buyId ?? ""}-${(row as PayableRow).kind}-${(row as PayableRow).due ?? ""}`
               }
               rows={g.rows}
               columns={[

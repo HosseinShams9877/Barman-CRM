@@ -2,13 +2,19 @@
 
 import { useState } from "react";
 import { Button, DataTable, Dialog, Input } from "@components/ui";
+import { Icon } from "@components/ui/Icon";
 import { EmptyState } from "@components/shared";
 import { ErrorState, LoadingState } from "@components/feedback";
 import { useToast } from "@components/feedback";
 import { ApiError } from "@core/errors";
 import { ROLES, ROLE_LABELS, type Role } from "@core/permissions";
+import { ROLE_DESCRIPTIONS } from "../constants/roleDescriptions";
 import type { AdminUserRow } from "../services/user.service";
-import { useAdminUsersQuery, useCreateUserMutation, useUpdateUserMutation } from "../hooks/useAdmin";
+import {
+  useAdminUsersQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+} from "../hooks/useAdmin";
 
 /** نقش‌های قابل تخصیص در فرم — admin.js:124 (select تک‌انتخابی). */
 const ASSIGNABLE_ROLES: readonly Role[] = ROLES;
@@ -101,7 +107,13 @@ export function UserManager({ canEdit }: Props) {
       );
     } else {
       createMutation.mutate(
-        { name: form.name.trim(), role: form.role, title: form.title.trim(), off: form.off, password: form.password },
+        {
+          name: form.name.trim(),
+          role: form.role,
+          title: form.title.trim(),
+          off: form.off,
+          password: form.password,
+        },
         { onSuccess: onOk, onError: onErr },
       );
     }
@@ -199,7 +211,13 @@ export function UserManager({ canEdit }: Props) {
         <EmptyState
           title="کاربری ثبت نشده"
           description="اولین کاربر سیستم را ایجاد کنید."
-          action={canEdit ? <Button variant="primary" onClick={openCreate}>کاربر جدید</Button> : undefined}
+          action={
+            canEdit ? (
+              <Button variant="primary" onClick={openCreate}>
+                کاربر جدید
+              </Button>
+            ) : undefined
+          }
         />
         {canEdit ? dialog : null}
       </>
@@ -207,24 +225,38 @@ export function UserManager({ canEdit }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="hint">
-        هر کاربر یک نقش دارد؛ نقش تعیین می‌کند چه صفحه‌ها و کارهایی را ببیند (admin.js:118).
-        غیرفعال‌سازی کاربر را حذف نمی‌کند و نشست او فوراً باطل می‌شود.
-      </p>
-      {canEdit ? (
-        <div className="flex justify-end">
-          <Button variant="primary" onClick={openCreate}>
+    <div className="admin-users-table">
+      <div className="admin-toolbar">
+        <p className="hint">
+          هر کاربر یک نقش دارد؛ نقش تعیین می‌کند چه صفحه‌ها و کارهایی را ببیند.
+        </p>
+        {canEdit ? (
+          <Button
+            variant="primary"
+            leadingIcon={<Icon name="plus" size="icon-sm" />}
+            onClick={openCreate}
+          >
             کاربر جدید
           </Button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       <DataTable<AdminUserRow>
         caption="فهرست کاربران"
         rows={items}
         rowKey={(u) => u.id}
         columns={[
-          { key: "name", header: "کاربر", render: (u) => <b>{u.name}</b> },
+          {
+            key: "name",
+            header: "کاربر",
+            render: (u) => (
+              <span className="user-cell">
+                <span className="avatar" data-role={u.roles[0]}>
+                  {u.name[0]}
+                </span>
+                <b>{u.name}</b>
+              </span>
+            ),
+          },
           {
             key: "role",
             header: "نقش",
@@ -232,17 +264,33 @@ export function UserManager({ canEdit }: Props) {
           },
           { key: "title", header: "سمت", render: (u) => u.title || "—" },
           {
+            key: "access",
+            header: "دسترسی",
+            render: (u) => <small>{u.roles.map((r) => ROLE_DESCRIPTIONS[r]).join("، ")}</small>,
+          },
+          {
             key: "off",
             header: "وضعیت",
             render: (u) =>
-              u.off ? <span className="tag-chip">غیرفعال</span> : <span className="tag-chip" data-tone="success">فعال</span>,
+              u.off ? (
+                <span className="tag-chip">غیرفعال</span>
+              ) : (
+                <span className="tag-chip" data-tone="success">
+                  فعال
+                </span>
+              ),
           },
           {
             key: "actions",
             header: "",
             render: (u) =>
               canEdit ? (
-                <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leadingIcon={<Icon name="edit" size="icon-sm" />}
+                  onClick={() => openEdit(u)}
+                >
                   ویرایش
                 </Button>
               ) : null,

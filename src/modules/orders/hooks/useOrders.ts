@@ -32,6 +32,9 @@ function toSearchParams(params: OrderListParams): string {
   if (params.stage !== null) sp.set("stage", String(params.stage));
   if (params.status !== null) sp.set("status", params.status);
   if (params.ownerId) sp.set("ownerId", params.ownerId);
+  if (params.overdue) sp.set("overdue", "1");
+  if (params.incomplete) sp.set("incomplete", "1");
+  if (params.bucket) sp.set("bucket", params.bucket);
   return sp.toString();
 }
 

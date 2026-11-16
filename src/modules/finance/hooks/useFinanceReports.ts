@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@core/api";
 import { ApiError } from "@core/errors";
 import { queryKeys } from "@core/query";
+import type { FinanceCheque } from "../types/cheque.types";
 import type {
   CashflowResult,
   CashflowResultNoMoney,
@@ -28,6 +29,10 @@ export function useReceivablesQuery() {
     queryFn: () =>
       apiFetch<ReceivablesResult | ReceivablesResultNoMoney>("/api/finance/receivables"),
   });
+}
+
+export function useFinanceChequesQuery(direction: "rec" | "pay", enabled: boolean) {
+  return useQuery<{ items: FinanceCheque[] }, ApiError>({ queryKey: queryKeys.finance.cheques(direction), enabled, queryFn: () => apiFetch(`/api/finance/cheques?direction=${direction}`) });
 }
 
 /** GET /api/finance/payables — پرداختنی‌ها تجمیع‌شده بر اساس تأمین‌کننده. */

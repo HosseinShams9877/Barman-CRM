@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useRouteDraft } from "@core/utils/useRouteDraft";
+import { PageHeader } from "@components/shared/PageHeader";
+import { useSummaryQuery } from "@modules/home/hooks/useSummary";
+import { LEAD_SOURCES } from "../constants/lists";
+import { LeadStageView } from "./LeadStageView";
+import { FollowupDialog } from "./FollowupDialog";
 import { Button, Card } from "@components/ui";
 import { EmptyState } from "@components/shared";
 import { ErrorState, LoadingState } from "@components/feedback";
@@ -52,6 +59,15 @@ export function LeadBoard() {
   const toast = useToast();
 
   const [filters, setFilters] = useLeadFilters();
+  const search = useSearchParams();
+  const [q, setQ] = useRouteDraft(search.get("q") ?? filters.q);
+  const [source, setSource] = useState("");
+  const [page, setPage] = useState(1);
+  const [owner, setOwner] = useState("");
+  const [near, setNear] = useState(false);
+  const [view, setView] = useState(false);
+  const [followup, setFollowup] = useState<string | null>(null);
+  const summary = useSummaryQuery(Boolean(me.data));
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [lostLeadId, setLostLeadId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState<boolean>(false);
@@ -60,14 +76,18 @@ export function LeadBoard() {
   const moveStage = useMoveLeadStageMutation();
 
   const query = useLeadsQuery({
-    page: 1,
+    page,
     pageSize: PAGE_SIZE,
-    q: filters.q,
-    ...(filters.line !== "all" ? { line: filters.line } : {}),
+    q,
     ...(filters.stage !== "all" ? { stage: filters.stage } : {}),
+    ...(filters.line !== "all" ? { line: filters.line } : {}),
+    ...(source ? { source } : {}),
+    ...(owner ? { ownerId: owner } : {}),
+    ...(near && summary.data?.workspace?.today ? { dueBefore: summary.data.workspace.today } : {}),
   });
 
-  const items = query.data?.items ?? [];
+  const base = query.data?.items ?? [];
+  const items = base;
   const byStage = new Map<LeadStageKey, LeadListItem[]>();
   for (const stage of BOARD_STAGES) byStage.set(stage, []);
   for (const lead of items) {
@@ -100,17 +120,17 @@ export function LeadBoard() {
 
   const onSearch = (e: React.FormEvent): void => {
     e.preventDefault();
+    setPage(1);
     void query.refetch();
   };
 
   return (
     <>
-      <div className="page-head">
-        <h1 className="h1">سرنخ‌ها</h1>
+      <PageHeader icon="phone" title="سرنخ‌ها" description="هر شماره از «سرنخ اولیه» شروع می‌شود و مرحله‌به‌مرحله تا «خرید قطعی» جلو می‌رود.">
         <div className="flex gap-2 flex-wrap">
           {canImport ? (
             <Button variant="ghost" onClick={() => setImportOpen(true)}>
-              ورود گروهی
+              ورود گروهی شماره‌ها
             </Button>
           ) : null}
           {canCreate ? (
@@ -119,10 +139,12 @@ export function LeadBoard() {
             </Button>
           ) : null}
         </div>
-      </div>
+      </PageHeader>
 
       <Card>
-        <form className="toolbar" onSubmit={onSearch} role="search">
+        <div className="seg-tabs" role="tablist" aria-label="نوع محصول">{LEAD_LINES.map((l) => <button type="button" role="tab" key={l.key} aria-selected={filters.line === l.key} onClick={()=>{setPage(1);setFilters((f)=>({...f,line:l.key}));}}>{l.label}</button>)}</div>
+        <nav className="lh-flow" role="tablist" aria-label="مرحله سرنخ">{BOARD_STAGES.map((s,index)=><button type="button" role="tab" data-stage={s} key={s} aria-selected={(filters.stage === "all" ? "raw" : filters.stage) === s} onClick={()=>{setPage(1);setFilters((f)=>({...f,stage:s}));}}><i>{s === "lost" ? "×" : toFaDigits(index+1)}</i><span>{stageLabel(s)}</span><b>{toFaDigits(query.data?.stageCounts?.[s] ?? byStage.get(s)?.length ?? 0)}</b></button>)}</nav>
+        <form className="toolbar leads-filters" onSubmit={onSearch} role="search">
           <div className="field toolbar-field">
             <label className="field-label" htmlFor="leads-q">
               جستجو
@@ -131,8 +153,8 @@ export function LeadBoard() {
               id="leads-q"
               className="input"
               type="search"
-              value={filters.q}
-              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
               placeholder="نام، شماره تلفن یا شناسه سرنخ"
             />
           </div>
@@ -144,7 +166,7 @@ export function LeadBoard() {
               id="leads-line"
               className="select"
               value={filters.line}
-              onChange={(e) => setFilters((f) => ({ ...f, line: e.target.value as Filters["line"] }))}
+              onChange={(e) => { setPage(1); setFilters((f) => ({ ...f, line: e.target.value as Filters["line"] })); }}
             >
               {LEAD_LINES.map((l) => (
                 <option key={l.key} value={l.key}>
@@ -163,7 +185,7 @@ export function LeadBoard() {
               className="select"
               value={filters.stage}
               onChange={(e) =>
-                setFilters((f) => ({ ...f, stage: e.target.value as Filters["stage"] }))
+                { setPage(1); setFilters((f) => ({ ...f, stage: e.target.value as Filters["stage"] })); }
               }
             >
               <option value="all">همه مراحل</option>
@@ -174,6 +196,10 @@ export function LeadBoard() {
               ))}
             </select>
           </div>
+          <select className="select" aria-label="منبع ورود" value={source} onChange={(e)=>{setSource(e.target.value);setPage(1);}}><option value="">همه منابع</option>{LEAD_SOURCES.map((s)=><option key={s} value={s}>{s}</option>)}</select>
+          {permissions.has("leads.viewAll") ? <select className="select" aria-label="کارشناس" value={owner} onChange={(e)=>{setOwner(e.target.value);setPage(1);}}><option value="">همه کارشناس‌ها</option>{(query.data?.owners ?? [...new Map(base.filter((l)=>l.ownerId).map((l)=>[l.ownerId,l.ownerName])).entries()].map(([id,name])=>({id:id!,name:name ?? "—"}))).map(({id,name})=><option key={id} value={id}>{name}</option>)}</select> : null}
+          <label className="flex gap-2 items-center"><input type="checkbox" checked={near} onChange={(e)=>setNear(e.target.checked)} />فقط پیگیری‌های نزدیک</label>
+          <Button type="button" variant="ghost" onClick={()=>setView((v)=>!v)}>{view ? "بورد" : "جدول"}</Button>
           <Button type="submit" variant="ghost" isLoading={query.isFetching}>
             جستجو
           </Button>
@@ -205,7 +231,7 @@ export function LeadBoard() {
         />
       ) : (
         <>
-          <div className="board" aria-label="بورد سرنخ‌ها">
+          {filters.stage !== "all" ? <LeadStageView stage={filters.stage} rows={byStage.get(filters.stage) ?? []} table={view} canMove={canMove} money={canSeeMoney} onOpen={setOpenLeadId} onFollowup={setFollowup} /> : <div className="board" aria-label="بورد سرنخ‌ها">
             {BOARD_STAGES.map((stage) => (
               <LeadColumn
                 key={stage}
@@ -218,17 +244,18 @@ export function LeadBoard() {
                 onDrop={handleDrop}
               />
             ))}
-          </div>
+          </div>}
           {query.data && query.data.total > query.data.items.length ? (
-            <p className="text-muted">
+            <div className="toolbar"><Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>صفحه قبل</Button><p className="text-muted">
               {toFaDigits(query.data.items.length)} سرنخ از {toFaDigits(query.data.total)} نمایش
               داده شد — با جستجو سرنخ موردنظر را پیدا کنید.
-            </p>
+            </p><Button size="sm" variant="ghost" disabled={page * PAGE_SIZE >= query.data.total} onClick={() => setPage((p) => p + 1)}>صفحه بعد</Button></div>
           ) : null}
         </>
       )}
 
       <LeadQuickView leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
+      {followup ? <FollowupDialog open leadId={followup} onClose={()=>setFollowup(null)} /> : null}
       {lostLeadId !== null ? (
         <LostDialog
           open={lostLeadId !== null}

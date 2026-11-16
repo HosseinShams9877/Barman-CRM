@@ -11,6 +11,10 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useRouteDraft } from "@core/utils/useRouteDraft";
+import { useUrlHash } from "@core/utils/useUrlHash";
+import { PageHeader } from "@components/shared/PageHeader";
 import Link from "next/link";
 import { Button, Card, DataTable } from "@components/ui";
 import { EmptyState } from "@components/shared";
@@ -18,6 +22,7 @@ import { ErrorState, LoadingState } from "@components/feedback";
 import { useMeQuery } from "@modules/auth/hooks/useAuth";
 import { formatMoney, toFaDigits } from "@core/formatting";
 import { formatJalaliFa, parseJalali } from "@core/calendar";
+import { useSummaryQuery } from "@modules/home/hooks/useSummary";
 import { BUY_STATUS_LABELS, BUY_STATUSES } from "../constants";
 import type { BuyStatus } from "../constants";
 import type { BuyListItem, BuyListItemNoMoney } from "../types/buy.types";
@@ -37,12 +42,18 @@ export function BuysList() {
   const me = useMeQuery();
   const permissions = new Set(me.data?.permissions ?? []);
   const canCreate = permissions.has("purchasing.edit");
+  const summary = useSummaryQuery(Boolean(me.data));
+  const role = me.data?.roles[0];
+  const actionStatus = role === "management" || role === "admin" ? "req" : role === "finance" ? "ok" : "fin";
   const canSeeMoney = permissions.has("money.view");
 
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState<string>("");
+  const search = useSearchParams();
+  const hash = useUrlHash();
+  const [q, setQ] = useRouteDraft(search.get("q") ?? "");
+  const [statusDraft, setStatus] = useRouteDraft(search.get("status") ?? "");
+  const status = hash === "#in" ? "fin" : statusDraft;
   const [page, setPage] = useState(1);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useRouteDraft(search.get("new") === "1");
 
   const query = useBuysQuery({
     q,
@@ -66,13 +77,13 @@ export function BuysList() {
     ? [
         {
           key: "total" as const,
-          header: "مبلغ کل",
+          header: "مبلغ",
           render: (row: Row) =>
             "calc" in row ? <span dir="ltr">{formatMoney(row.calc.total)} ریال</span> : null,
         },
         {
           key: "due" as const,
-          header: "بدهی باقی‌مانده",
+          header: "مانده بدهی",
           render: (row: Row) =>
             "calc" in row ? <span dir="ltr">{formatMoney(row.calc.due)} ریال</span> : null,
         },
@@ -81,16 +92,16 @@ export function BuysList() {
 
   return (
     <>
-      <div className="page-head">
-        <h1 className="h1">خریدها</h1>
+      <PageHeader icon="cart" title={hash === "#in" ? "ورود خرید به انبار" : "خرید و تأمین"} description="مواد اولیه کارگاه و محصولات نمایندگی؛ درخواست، تأیید، پرداخت و ورود به انبار.">
         {canCreate ? (
           <Button onClick={() => setDialogOpen(true)} leadingIcon={<span aria-hidden="true">+</span>}>
             درخواست خرید جدید
           </Button>
         ) : null}
-      </div>
+      </PageHeader>
 
       <Card>
+        <nav className="fw-q" aria-label="وضعیت خرید">{[[actionStatus,"منتظر اقدام شما"],["ok","منتظر مالی"],["fin","منتظر رسیدن کالا"],["recv","وارد انبار شد"],["","همه"]].map(([key,label],index)=><Link key={index} className="btn btn-ghost" href={key ? `/buys?status=${key}` : "/buys"} aria-current={status === key ? "page" : undefined}>{label}{key === actionStatus && summary.data?.workspace?.buyWaiting ? " " + toFaDigits(summary.data.workspace.buyWaiting) : ""}</Link>)}</nav>
         <form className="toolbar" onSubmit={onSearch} role="search">
           <div className="field toolbar-field">
             <label className="field-label" htmlFor="buys-q">
@@ -156,49 +167,13 @@ export function BuysList() {
             rowKey={(row) => row.id}
             rows={query.data?.items ?? []}
             columns={[
-              {
-                key: "id",
-                header: "شناسه",
-                render: (row: Row) => (
-                  <Link href={`/buys/${row.id}`} className="link">
-                    <span dir="ltr">{row.id}</span>
-                  </Link>
-                ),
-              },
-              {
-                key: "status",
-                header: "وضعیت",
-                render: (row: Row) => (
-                  <span className="tag-chip" data-tone={statusTone(row.status)}>
-                    {BUY_STATUS_LABELS[row.status]}
-                  </span>
-                ),
-              },
-              {
-                key: "supplier",
-                header: "تأمین‌کننده",
-                render: (row: Row) =>
-                  row.supplierName ? <span>{row.supplierName}</span> : <span className="text-muted">—</span>,
-              },
-              {
-                key: "itemCount",
-                header: "اقلام",
-                render: (row: Row) => toFaDigits(row.itemCount),
-              },
-              {
-                key: "createdBy",
-                header: "ثبت‌کننده",
-                render: (row: Row) => (row.createdByName ? <span>{row.createdByName}</span> : null),
-              },
+              {key:"id",header:"سند",render:(row:Row)=><Link href={`/buys/${row.id}`} className="link"><b className="ltr">{row.id}</b><small className="ltr">{isoToFa(row.createdAt)}</small></Link>},
+              {key:"kind",header:"نوع",render:()=>"مواد اولیه"},
+              {key:"supplier",header:"فروشنده",render:(row:Row)=>row.supplierName ?? "—"},
+              {key:"items",header:"اقلام",render:(row:Row)=>toFaDigits(row.itemCount)},
               ...moneyColumns,
-              {
-                key: "createdAt",
-                header: "تاریخ ثبت",
-                render: (row: Row) => {
-                  const fa = isoToFa(row.createdAt);
-                  return fa ? <span dir="ltr">{fa}</span> : <span className="text-muted">—</span>;
-                },
-              },
+              {key:"method",header:"روش پرداخت",render:(row:Row)=>row.chequeCount ? "چک" : "—"},
+              {key:"status",header:"وضعیت",render:(row:Row)=><span className="tag-chip" data-tone={statusTone(row.status)}>{BUY_STATUS_LABELS[row.status]}</span>},
             ]}
           />
 

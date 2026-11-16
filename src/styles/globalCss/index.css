@@ -4,11 +4,15 @@
  * پیکربندی Tailwind به tailwind.config.ts در ریشه پروژه ارجاع می‌دهد.
  */
 
-@import "tailwindcss";
-@config "../../../tailwind.config.ts";
-
+@import "tailwindcss" source(none);
 @import "./tokens.css";
 @import "./themes.css";
 @import "./typography.css";
 @import "./layout.css";
 @import "./utilities.css";
+
+@source "../../app";
+@source "../../components";
+@source "../../modules";
+@source "../../core";
+@config "../../../tailwind.config.ts";

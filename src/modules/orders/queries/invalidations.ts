@@ -12,6 +12,9 @@ import { queryKeys } from "@core/query";
 /** بعد از ایجاد/ویرایش/انتقال مرحله/لغو/ثبت پرداخت یا چک یک سفارش. */
 export function invalidateOrders(queryClient: QueryClient, orderId?: string): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+  for (const key of [queryKeys.home.all, queryKeys.finance.all, queryKeys.stock.all, queryKeys.moves.all, queryKeys.leads.all, queryKeys.reports.all]) {
+    void queryClient.invalidateQueries({ queryKey: key });
+  }
   if (orderId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) });
   }

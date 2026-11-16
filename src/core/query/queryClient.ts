@@ -55,7 +55,9 @@ export const queryKeys = {
   /** سرنخ‌ها (فاز ۳) */
   leads: {
     all: ["leads"] as const,
+    board: () => [...queryKeys.leads.all, "board"] as const,
     list: (params: {
+      page?: number; pageSize?: number; source?: string | null; dueBefore?: string | null;
       line: string | null;
       stage: string | null;
       ownerId: string | null;
@@ -117,6 +119,7 @@ export const queryKeys = {
   },
   /** گزارش‌های مالی (فاز ۶) */
   finance: {
+    cheques: (direction: "rec" | "pay") => [...queryKeys.finance.all, "cheques", direction] as const,
     all: ["finance"] as const,
     receivables: () => [...queryKeys.finance.all, "receivables"] as const,
     payables: () => [...queryKeys.finance.all, "payables"] as const,

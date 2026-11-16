@@ -90,6 +90,7 @@ export async function listReceivables(
         accountName: groupName,
         orderId: order.id,
         kind: "cheque",
+        chequeId: chq.id, sayad: chq.sayad, bank: chq.bank, owner: chq.owner, status: chq.status,
         amount: chq.amount,
         due: chq.due,
       });

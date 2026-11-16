@@ -104,6 +104,7 @@ function toListItem(row: BuyRow): BuyListItem {
     supplierId: row.supplierId,
     supplierName: row.supplier?.name ?? null,
     itemCount: row.items.length,
+    chequeCount: row.cheques.length,
     createdByName: row.creator?.name ?? null,
     createdAt: isoFromUtc(Number(row.createdAt)),
     rev: row.rev,

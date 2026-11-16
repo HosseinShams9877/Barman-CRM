@@ -18,6 +18,11 @@ import type { TxnDirection } from "../constants";
 
 /** ردیف مطالبات — یک چک دریافتی یا نسیه باقی‌مانده. */
 export type ReceivableRow = {
+  chequeId?: string;
+  sayad?: string;
+  bank?: string;
+  owner?: string;
+  status?: string;
   accountId: string;
   accountName: string;
   orderId: string | null;
@@ -60,6 +65,9 @@ export type ReceivablesResultNoMoney = {
 
 /** ردیف بدهی — یک چک صادره یا نسیه باقی‌مانده خرید. */
 export type PayableRow = {
+  chequeId?: string;
+  sayad?: string;
+  status?: string;
   supplierId: string | null;
   supplierName: string | null;
   buyId: string | null;

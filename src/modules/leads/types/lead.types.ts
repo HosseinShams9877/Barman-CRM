@@ -63,6 +63,9 @@ export type LeadDetail = LeadListItem & {
 
 export type LeadListResult = {
   items: LeadListItem[];
+  /** Scoped totals across every page; optional for older cached responses. */
+  stageCounts?: Partial<Record<LeadStageKey, number>>;
+  owners?: { id: string; name: string }[];
   total: number;
   page: number;
   pageSize: number;

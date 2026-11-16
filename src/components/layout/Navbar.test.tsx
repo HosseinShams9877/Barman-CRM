@@ -13,6 +13,7 @@ vi.mock("@modules/auth/hooks/useAuth", () => ({
     isPending: false,
   })),
 }));
+vi.mock("@modules/home/hooks/useSummary", () => ({ useSummaryQuery: () => ({ data: null }) }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
@@ -67,7 +68,7 @@ describe("Navbar — نقش واقعی", () => {
       noMoney: true,
     });
     render(<Navbar onOpenSidebar={() => {}} />);
-    expect(screen.getByText("کارشناس فروش، تولید")).toBeInTheDocument();
+    expect(screen.getByText("کارشناس فروش، مدیر تولید")).toBeInTheDocument();
   });
 
   it("کاربر مهمان: لینک ورود، بدون دکمه خروج", () => {

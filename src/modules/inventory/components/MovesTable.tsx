@@ -42,12 +42,12 @@ function isEditable(row: MoveRow): boolean {
 /**
  * فهرست حرکت‌ها — فیلترها در کلید query می‌نشینند (CD-09).
  */
-export function MovesTable() {
+export function MovesTable({ defaultWarehouse = "" }: { defaultWarehouse?: Warehouse | "" }) {
   const me = useMeQuery();
   const permissions = new Set(me.data?.permissions ?? []);
   const canMove = permissions.has("inventory.moves");
 
-  const [wh, setWh] = useState<Warehouse | "">("");
+  const [wh, setWh] = useState<Warehouse | "">(defaultWarehouse);
   const [kind, setKind] = useState<MoveKind | "">("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);

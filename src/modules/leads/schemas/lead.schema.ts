@@ -104,6 +104,8 @@ export const moveStageSchema = z
 
 /** کوئری لیست سرنخ‌ها — فیلتر خط/مرحله/کارشناس + جستجو + صفحه‌بندی. */
 export const listLeadsQuerySchema = paginationSchema.extend({
+  source: z.string().trim().max(96).optional(),
+  dueBefore: jalaliDateSchema.optional(),
   line: leadLineSchema.optional(),
   stage: leadStageSchema.optional(),
   ownerId: z.string().trim().min(1).max(64).optional(),

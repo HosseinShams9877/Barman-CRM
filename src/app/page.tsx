@@ -19,9 +19,11 @@ export default function HomePage() {
     if (!me.isLoading && me.data === null) {
       router.replace("/login");
     }
+    if (me.data?.roles.includes("admin")) router.replace("/admin");
+    else if (me.data?.roles.includes("production")) router.replace("/production");
   }, [me.isLoading, me.data, router]);
 
-  if (me.data === null) return null;
+  if (!me.data || me.data.roles.includes("admin") || me.data.roles.includes("production")) return null;
   return (
     <div className="container-app py-8">
       <Dashboard />

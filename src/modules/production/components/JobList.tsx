@@ -39,12 +39,12 @@ function statusTone(status: JobStatus): "info" | "success" | "danger" {
 }
 
 /** فهرست کارهای تولید — فیلترها در کلید query می‌نشینند (CD-09). */
-export function JobList() {
+export function JobList({ initialStatus = "" }: { initialStatus?: JobStatus | "" }) {
   const me = useMeQuery();
   const permissions = new Set(me.data?.permissions ?? []);
   const canEdit = permissions.has("production.edit");
 
-  const [status, setStatus] = useState<JobStatus | "">("");
+  const [status, setStatus] = useState<JobStatus | "">(initialStatus);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);

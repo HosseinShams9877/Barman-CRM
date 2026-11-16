@@ -88,7 +88,7 @@ describe("صفحه ورود", () => {
     expect(await screen.findByText("نام کاربری یا رمز عبور نادرست است.")).toBeInTheDocument();
   });
 
-  it("ورود موفق → هدایت به /", async () => {
+  it("ورود موفق ادمین → هدایت یک‌بار به /admin", async () => {
     vi.mocked(apiFetch).mockResolvedValue({ user: ADMIN_USER } as never);
     renderPage();
 
@@ -97,6 +97,8 @@ describe("صفحه ورود", () => {
     submit();
 
     await screen.findByText("خوش آمدید، ali");
-    expect(replace).toHaveBeenCalledWith("/");
+    expect(replace).toHaveBeenCalledWith("/admin");
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText("خوش آمدید، ali")).toHaveLength(1);
   });
 });

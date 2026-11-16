@@ -19,7 +19,7 @@ type Props = {
   canEdit: boolean;
 };
 
-type Draft = { materialId: string; qty: string };
+type Draft = { key: string; materialId: string; qty: string };
 
 /**
  * ویرایشگر فرمول تولید (BOM) — PHASE_07 §۱۰ / دروازه خروج ۲.
@@ -35,7 +35,8 @@ export function BomEditor({ canEdit }: Props) {
   const productsQuery = useAdminProductsQuery();
   const materialsQuery = useAdminMaterialsQuery();
   const [productId, setProductId] = useState<string | null>(null);
-  const bomQuery = useBomQuery(productId);
+  const resolvedProductId = productId ?? productsQuery.data?.items.find((p) => p.line === "prod")?.id ?? null;
+  const bomQuery = useBomQuery(resolvedProductId);
   const saveMutation = useSaveBomMutation();
   const toast = useToast();
 
@@ -74,6 +75,7 @@ export function BomEditor({ canEdit }: Props) {
 
   // ردیف‌های نمایشی: ویرایش محلی، در غیر این صورت داده سرور.
   const serverRows: Draft[] = (bomQuery.data?.items ?? []).map((i) => ({
+    key: i.materialId,
     materialId: i.materialId,
     qty: toFaDigits(String(i.qty)),
   }));
@@ -89,7 +91,7 @@ export function BomEditor({ canEdit }: Props) {
 
   const addRow = (): void => {
     if (materials.length === 0) return;
-    setRows([...rows, { materialId: materials[0]!.id, qty: "۰" }]);
+    setRows([...rows, { key: crypto.randomUUID(), materialId: materials[0]!.id, qty: "۰" }]);
   };
 
   const removeRow = (index: number): void => {
@@ -142,7 +144,7 @@ export function BomEditor({ canEdit }: Props) {
 
       <div className="alert alert-info" role="note">
         هر ۱ {product.unit} «{product.name}» این مقدارها از انبار مواد اولیه مصرف می‌کند —
-        مثلاً ۱۰۰ {product.unit} = ۱۰۰ برابر هر ردیف (admin.js:72).
+        مثلاً ۱۰۰ {product.unit} = ۱۰۰ برابر هر ردیف.
       </div>
 
       {bomQuery.isLoading ? (
@@ -173,7 +175,7 @@ export function BomEditor({ canEdit }: Props) {
                 const mat = materials.find((m) => m.id === d.materialId);
                 const qty = parseFaNumber(d.qty);
                 return (
-                  <tr key={`${d.materialId}-${i}`}>
+                  <tr key={d.key}>
                     <td>
                       {canEdit ? (
                         <select

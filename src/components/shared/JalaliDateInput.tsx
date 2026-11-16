@@ -44,18 +44,17 @@ export function JalaliDateInput({
 }: JalaliDateInputProps) {
   const autoId = useId();
   const inputId = id ?? name ?? autoId;
-  const [text, setText] = useState<string>(() => displayOf(value));
-  const [focused, setFocused] = useState<boolean>(false);
+  const [draft, setDraft] = useState<{ sent: string; text: string } | null>(null);
+  const text = draft?.sent === value ? draft.text : displayOf(value);
 
   const handle_change = (raw: string): void => {
-    setText(raw);
     const iso = parseJalaliIso(raw);
+    setDraft({ sent: iso ?? raw, text: raw });
     onChange(iso ?? raw);
   };
 
   const handle_blur = (): void => {
-    setFocused(false);
-    setText(displayOf(text));
+    setDraft(null);
   };
 
   const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
@@ -75,14 +74,13 @@ export function JalaliDateInput({
         type="text"
         inputMode="numeric"
         dir="ltr"
-        value={focused ? text : displayOf(text)}
+        value={text}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
         aria-invalid={error ? "true" : undefined}
         aria-describedby={describedBy}
         onChange={(e) => handle_change(e.target.value)}
-        onFocus={() => setFocused(true)}
         onBlur={handle_blur}
       />
       {error ? (

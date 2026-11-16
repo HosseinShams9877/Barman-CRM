@@ -33,7 +33,7 @@
   --palette-muted: #6b7a93;
   --palette-line: #e4eaf3;
   --palette-line-2: #eef2f8;
-  --palette-bg: #f3f6fb;
+  --palette-bg: #e8edf5;
   --palette-card: #ffffff;
 
   /* =========================================================
@@ -43,8 +43,8 @@
   --palette-sidebar-mid: #0a1f4a;
   --palette-sidebar-bottom: #081a3e;
   --palette-sidebar-text: #dfe8f8;
-  --palette-sidebar-link: #d4def2;
-  --palette-sidebar-cap: #8ea2c8;
+  --palette-sidebar-link: #c9d5ec;
+  --palette-sidebar-cap: #6f84b0;
   --palette-sidebar-foot: #93a6c9;
   --palette-sidebar-brand-en: #a9b9d8;
   --palette-active-link-1: #1f78f0;
@@ -66,7 +66,7 @@
   --palette-btn-hover-border: #c8d4e6;
   --palette-input-border: #d9e1ee;
   --palette-focus-soft: rgba(22, 98, 216, 0.15);
-  --palette-table-head: #f6f8fc;
+  --palette-table-head: #eef3fa;
   --palette-row-hover: #fafcff;
   --palette-danger-soft-border: #f2c4c4;
   --palette-danger-hover-border: #e9a6a6;
@@ -77,8 +77,8 @@
    * ========================================================= */
   --color-bg: var(--palette-bg);
   --color-surface: var(--palette-card);
-  --color-surface-sunken: var(--palette-bg);
-  --color-border: var(--palette-line);
+  --color-surface-sunken: #f3f6fb;
+  --color-border: #d3dceb;
   --color-border-subtle: var(--palette-line-2);
   --color-text: var(--palette-ink);
   --color-text-secondary: var(--palette-ink-2);
@@ -127,9 +127,30 @@
   --color-focus-soft: var(--palette-focus-soft);
   --color-table-head: var(--palette-table-head);
   --color-row-hover: var(--palette-row-hover);
+  --color-row-alternate: #fbfcfe;
   --color-danger-soft-border: var(--palette-danger-soft-border);
   --color-danger-hover-border: var(--palette-danger-hover-border);
   --color-btn-primary-shadow: var(--palette-btn-primary-shadow);
+  --color-sidebar-icon: #8ea6d4;
+  --color-sidebar-brand-en: var(--palette-sidebar-brand-en);
+  --color-sidebar-active: #1f6fe0;
+  --color-hero-background: linear-gradient(135deg, #0a2150 0%, #1b3f86 100%);
+  --color-login-background: linear-gradient(160deg, #0c2a62 0%, #081a3e 60%, #0a1f4a 100%);
+  --shadow-login: 0 30px 80px rgba(0, 0, 0, .35);
+  --color-hero-text: #d6e2ff;
+  --color-hero-danger: #ffb4b4;
+  --color-next-background: linear-gradient(180deg, #f5f8ff, #ffffff);
+  --color-next-success-background: linear-gradient(180deg, #f3fbf6, #ffffff);
+  --color-next-border: var(--palette-blue-100);
+  --color-next-success-border: #cdeedd;
+  --color-phase-surface: #f6f8fc;
+  --color-role-management: #0b2a55;
+  --color-role-admin: #6b4bd8;
+  --color-role-finance: #c26a0a;
+  --color-role-salesManager: #1662d8;
+  --color-role-sales: #0e8f6e;
+  --color-role-production: #8a3b12;
+  --color-role-depot: #0f7a8a;
 
   /* =========================================================
    * توکن‌های معنایی — عمل و بازخورد
@@ -171,6 +192,11 @@
   --color-stage-approval: var(--palette-purple-500);
   --color-stage-production: var(--palette-orange-500);
   --color-stage-fulfillment: var(--palette-green-500);
+  --color-flow-invoice: var(--color-stage-sales);
+  --color-flow-customer: var(--color-stage-production);
+  --color-flow-production: var(--color-stage-approval);
+  --color-flow-depot: var(--color-stage-fulfillment);
+  --color-flow-delivery: var(--color-success);
 
   /* =========================================================
    * فضاآزاد — مقیاس ۴px

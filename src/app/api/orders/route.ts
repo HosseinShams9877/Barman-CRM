@@ -39,6 +39,9 @@ export async function GET(req: Request): Promise<Response> {
         stage: url.searchParams.get("stage") ?? undefined,
         status: url.searchParams.get("status") ?? undefined,
         ownerId: url.searchParams.get("ownerId") ?? undefined,
+        overdue: url.searchParams.get("overdue") ?? undefined,
+        incomplete: url.searchParams.get("incomplete") ?? undefined,
+        bucket: url.searchParams.get("bucket") ?? undefined,
       },
       faErrorMap,
     );
@@ -52,6 +55,7 @@ export async function GET(req: Request): Promise<Response> {
     const scope: OrderListScope = {
       restrictToOwner: session.roles.every((r) => r === "sales"),
       userId: session.userId,
+      role: session.roles[0],
     };
     // پارامترهای اختیاری Zod به قرارداد `OrderListParams` (null به‌جای undefined)
     // نگاشت می‌شوند — service دقیقاً همین قرارداد را می‌خواند.
@@ -63,6 +67,9 @@ export async function GET(req: Request): Promise<Response> {
         stage: query.stage ?? null,
         status: query.status ?? null,
         ownerId: query.ownerId ?? null,
+        overdue: query.overdue,
+        incomplete: query.incomplete,
+        bucket: query.bucket,
       },
       scope,
       shouldHideMoney(session),

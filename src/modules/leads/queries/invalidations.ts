@@ -12,6 +12,7 @@ import { queryKeys } from "@core/query";
 /** بعد از ایجاد/ویرایش/جابه‌جایی مرحله/ثبت پیگیری یک سرنخ. */
 export function invalidateLeads(queryClient: QueryClient, leadId?: string): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.leads.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.home.all });
   if (leadId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.leads.detail(leadId) });
   }

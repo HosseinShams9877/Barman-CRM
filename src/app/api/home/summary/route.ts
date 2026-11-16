@@ -10,6 +10,7 @@ import { requireSession, SESSION_COOKIE } from "@core/auth";
 import { errorToResponse } from "@core/errors";
 import { shouldHideMoney, hasPermission } from "@core/permissions";
 import { getDashboardSummary } from "@modules/home/services/summary.service";
+import { getDashboardWorkspace } from "@modules/home/services/workspace.service";
 
 /** GET /api/home/summary — خلاصه عملکرد کاربر جاری. */
 export async function GET(): Promise<Response> {
@@ -28,6 +29,7 @@ export async function GET(): Promise<Response> {
 
     // ۳/۴) خواندن خلاصه — noMoney نقش‌های فاقد money.view (R-32)
     const summary = await getDashboardSummary(scope, shouldHideMoney(session));
+    summary.workspace = await getDashboardWorkspace(session.roles[0] ?? "sales", session.userId, scope.restrictToOwner, shouldHideMoney(session));
 
     // ۵) پاسخ
     return NextResponse.json(summary, { status: 200 });

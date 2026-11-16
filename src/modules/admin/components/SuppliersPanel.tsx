@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, DataTable, Dialog, Input } from "@components/ui";
+import { Icon } from "@components/ui/Icon";
 import { EmptyState } from "@components/shared";
 import { ErrorState, LoadingState } from "@components/feedback";
 import { useToast } from "@components/feedback";
@@ -31,7 +32,12 @@ function emptyForm(): FormState {
 }
 
 function toForm(s: SupplierAdminRow): FormState {
-  return { name: s.name, kind: s.kind === "agency" ? "agency" : "raw", phone: s.phone, terms: s.terms };
+  return {
+    name: s.name,
+    kind: s.kind === "agency" ? "agency" : "raw",
+    phone: s.phone,
+    terms: s.terms,
+  };
 }
 
 const KIND_LABELS: Readonly<Record<"raw" | "agency", string>> = {
@@ -169,8 +175,16 @@ export function SuppliersPanel({ canEdit }: Props) {
       <>
         <EmptyState
           title="تأمین‌کننده‌ای ثبت نشده"
-          description={canEdit ? "اولین تأمین‌کننده را ایجاد کنید." : "هنوز تأمین‌کننده‌ای وجود ندارد."}
-          action={canEdit ? <Button variant="primary" onClick={openCreate}>تأمین‌کننده جدید</Button> : undefined}
+          description={
+            canEdit ? "اولین تأمین‌کننده را ایجاد کنید." : "هنوز تأمین‌کننده‌ای وجود ندارد."
+          }
+          action={
+            canEdit ? (
+              <Button variant="primary" onClick={openCreate}>
+                تأمین‌کننده جدید
+              </Button>
+            ) : undefined
+          }
         />
         {canEdit ? dialog : null}
       </>
@@ -178,10 +192,14 @@ export function SuppliersPanel({ canEdit }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div>
       {canEdit ? (
-        <div className="flex justify-end">
-          <Button variant="primary" onClick={openCreate}>
+        <div className="admin-toolbar">
+          <Button
+            variant="primary"
+            leadingIcon={<Icon name="plus" size="icon-sm" />}
+            onClick={openCreate}
+          >
             تأمین‌کننده جدید
           </Button>
         </div>
@@ -209,7 +227,12 @@ export function SuppliersPanel({ canEdit }: Props) {
             header: "",
             render: (s) =>
               canEdit ? (
-                <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leadingIcon={<Icon name="edit" size="icon-sm" />}
+                  onClick={() => openEdit(s)}
+                >
                   ویرایش
                 </Button>
               ) : null,

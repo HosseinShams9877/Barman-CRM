@@ -28,6 +28,8 @@ function toSearchParams(params: ListQuery): string {
   if (params.line) sp.set("line", params.line);
   if (params.stage) sp.set("stage", params.stage);
   if (params.ownerId) sp.set("ownerId", params.ownerId);
+  if (params.source) sp.set("source", params.source);
+  if (params.dueBefore) sp.set("dueBefore", params.dueBefore);
   return sp.toString();
 }
 
@@ -39,6 +41,7 @@ export function useLeadsQuery(params: LeadListParams) {
       stage: params.stage ?? null,
       ownerId: params.ownerId ?? null,
       q: params.q,
+      page: params.page, pageSize: params.pageSize, source: params.source ?? null, dueBefore: params.dueBefore ?? null,
     }),
     queryFn: () => apiFetch<LeadListResult>(`/api/leads?${toSearchParams(params)}`),
   });

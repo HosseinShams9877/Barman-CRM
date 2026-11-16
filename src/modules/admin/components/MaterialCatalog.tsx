@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import {
+  useCatalogMaterialsQuery,
+  useCatalogProductsQuery,
+} from "@modules/inventory/hooks/useCatalog";
+import { toFaDigits } from "@core/formatting";
 import { Button, DataTable, Dialog, Input } from "@components/ui";
+import { Icon } from "@components/ui/Icon";
 import { EmptyState } from "@components/shared";
 import { ErrorState, LoadingState } from "@components/feedback";
 import { useToast } from "@components/feedback";
@@ -49,6 +55,8 @@ function toForm(m: MaterialAdminRow): FormState {
  * صفر باشد. قیمت/موجودی برای نقش‌های فاقد money.view فیلتر شده‌اند.
  */
 export function MaterialCatalog({ canEdit }: Props) {
+  const stock = useCatalogMaterialsQuery();
+  const products = useCatalogProductsQuery();
   const query = useAdminMaterialsQuery();
   const createMutation = useCreateMaterialMutation();
   const updateMutation = useUpdateMaterialMutation();
@@ -189,7 +197,13 @@ export function MaterialCatalog({ canEdit }: Props) {
         <EmptyState
           title="ماده اولیه‌ای ثبت نشده"
           description={canEdit ? "اولین ماده اولیه را ایجاد کنید." : "هنوز ماده‌ای وجود ندارد."}
-          action={canEdit ? <Button variant="primary" onClick={openCreate}>ماده جدید</Button> : undefined}
+          action={
+            canEdit ? (
+              <Button variant="primary" onClick={openCreate}>
+                ماده جدید
+              </Button>
+            ) : undefined
+          }
         />
         {canEdit ? dialog : null}
       </>
@@ -197,18 +211,22 @@ export function MaterialCatalog({ canEdit }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="hint">
-        مواد کیلویی/لیتری خریده می‌شوند؛ فرمول هر محصول می‌گوید هر واحد فروش چقدر از هر ماده
-        مصرف می‌کند (admin.js:52).
-      </p>
-      {canEdit ? (
-        <div className="flex justify-end">
-          <Button variant="primary" onClick={openCreate}>
+    <div>
+      <div className="admin-toolbar">
+        <p className="hint">
+          مواد کیلویی/لیتری خریده می‌شوند؛ فرمول هر محصول می‌گوید هر واحد فروش چقدر از هر ماده مصرف
+          می‌کند.
+        </p>
+        {canEdit ? (
+          <Button
+            variant="primary"
+            leadingIcon={<Icon name="plus" size="icon-sm" />}
+            onClick={openCreate}
+          >
             ماده اولیه جدید
           </Button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       <DataTable<MaterialAdminRow>
         caption="فهرست مواد اولیه"
         rows={items}
@@ -224,11 +242,30 @@ export function MaterialCatalog({ canEdit }: Props) {
           },
           { key: "min", header: "حداقل موجودی", render: (m) => m.min },
           {
+            key: "stock",
+            header: "موجودی",
+            render: (m) => toFaDigits(stock.data?.items.find((s) => s.id === m.id)?.onHand ?? 0),
+          },
+          {
+            key: "bomCount",
+            header: "در فرمول چند محصول",
+            render: (m) =>
+              toFaDigits(
+                products.data?.items.filter((p) => p.bom.some((b) => b.materialId === m.id))
+                  .length ?? 0,
+              ),
+          },
+          {
             key: "actions",
             header: "",
             render: (m) =>
               canEdit ? (
-                <Button variant="ghost" size="sm" onClick={() => openEdit(m)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leadingIcon={<Icon name="edit" size="icon-sm" />}
+                  onClick={() => openEdit(m)}
+                >
                   ویرایش
                 </Button>
               ) : null,

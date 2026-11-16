@@ -16,7 +16,8 @@
 
 import { useState } from "react";
 import { Button, Dialog, Input } from "@components/ui";
-import { toFaDigits } from "@core/formatting";
+import { toFaDigits, toEnDigits } from "@core/formatting";
+import { useCatalogProductsQuery } from "@modules/inventory/hooks/useCatalog";
 import { faErrorMap } from "@core/validation";
 import { PAYMENT_PRESETS } from "../constants";
 import {
@@ -41,6 +42,7 @@ export type OrderFormDialogProps = {
 };
 
 type ItemForm = {
+  key: string;
   /** شناسه قلم موجود (ویرایش) — رشته خالی برای قلم جدید. */
   id: string;
   productId: string;
@@ -64,6 +66,7 @@ type FormState = {
 };
 
 const EMPTY_ITEM: ItemForm = {
+  key: "first",
   id: "",
   productId: "",
   qty: "",
@@ -87,12 +90,13 @@ const EMPTY_FORM: FormState = {
 
 /** مقدار عددی فیلد متن — رشته خالی/نامعتبر به NaN (خطای اعتبارسنجی). */
 function num(v: string): number {
-  return v.trim().length === 0 ? Number.NaN : Number(v);
+  return v.trim().length === 0 ? Number.NaN : Number(toEnDigits(v).replace(/[,٬]/g, ""));
 }
 
 /** ویرایش: اقلام سفارش موجود به فرم تبدیل می‌شوند. */
 function itemsFromOrder(order: OrderDetail | OrderDetailNoMoney): ItemForm[] {
   return order.items.map((it) => ({
+    key: it.id,
     id: it.id,
     productId: it.productId,
     qty: String(it.qty),
@@ -135,6 +139,7 @@ export function OrderFormDialog({
   const createOrder = useCreateOrderMutation();
   const updateOrder = useUpdateOrderMutation();
   const accounts = useAccountsQuery({ page: 1, pageSize: 200, q: "", includeInactive: false });
+  const catalog = useCatalogProductsQuery();
   const pending = createOrder.isPending || updateOrder.isPending;
 
   const setItem = (index: number, patch: Partial<ItemForm>): void => {
@@ -142,7 +147,7 @@ export function OrderFormDialog({
   };
 
   const addItem = (): void => {
-    setItems((rows) => [...rows, { ...EMPTY_ITEM }]);
+    setItems((rows) => [...rows, { ...EMPTY_ITEM, key: crypto.randomUUID() }]);
   };
 
   const removeItem = (index: number): void => {
@@ -155,7 +160,7 @@ export function OrderFormDialog({
       productId: it.productId.trim(),
       qty: num(it.qty),
       price: num(it.price),
-      discount: it.discount.trim().length === 0 ? 0 : Number(it.discount),
+      discount: it.discount.trim().length === 0 ? 0 : num(it.discount),
       color: it.color.trim(),
     }));
 
@@ -168,12 +173,12 @@ export function OrderFormDialog({
         accountId: form.accountId.length > 0 ? form.accountId : null,
         line: form.line,
         items: buildItems() as UpdateOrderInput["items"],
-        discPct: Number(form.discPct),
-        discAmt: Number(form.discAmt),
-        ship: Number(form.ship),
-        install: Number(form.install),
+        discPct: num(form.discPct),
+        discAmt: num(form.discAmt),
+        ship: num(form.ship),
+        install: num(form.install),
         noVat: form.noVat,
-        validDays: Number(form.validDays),
+        validDays: num(form.validDays),
         note: form.note.trim(),
         preset: form.preset,
       };
@@ -194,12 +199,12 @@ export function OrderFormDialog({
       ...(leadId && leadId.length > 0 ? { leadId } : {}),
       line: form.line,
       items: buildItems() as CreateOrderInput["items"],
-      discPct: Number(form.discPct),
-      discAmt: Number(form.discAmt),
-      ship: Number(form.ship),
-      install: Number(form.install),
+      discPct: num(form.discPct),
+      discAmt: num(form.discAmt),
+      ship: num(form.ship),
+      install: num(form.install),
       noVat: form.noVat,
-      validDays: Number(form.validDays),
+      validDays: num(form.validDays),
       note: form.note.trim(),
       preset: form.preset,
     };
@@ -284,20 +289,19 @@ export function OrderFormDialog({
         <fieldset className="stack gap-2">
           <legend className="field-label">اقلام پیش‌فاکتور</legend>
           {items.map((it, i) => (
-            <div key={it.id || i} className="grid grid-cols-2 gap-2 sm:grid-cols-6 items-end">
+            <div key={it.key} className="grid grid-cols-2 gap-2 sm:grid-cols-6 items-end">
               <div className="field col-span-2 sm:col-span-2">
                 <label className="field-label" htmlFor={`item-product-${i}`}>
-                  شناسه محصول
+                  محصول
                 </label>
-                <input
+                <select
                   id={`item-product-${i}`}
-                  className="input"
+                  className="select"
                   value={it.productId}
-                  onChange={(e) => setItem(i, { productId: e.target.value })}
+                  onChange={(e) => { const product = catalog.data?.items.find((p) => p.id === e.target.value); setItem(i, { productId: e.target.value, price: String(product?.price ?? ""), color: "" }); }}
                   disabled={pending}
-                  dir="ltr"
                   required
-                />
+                ><option value="">انتخاب محصول</option>{catalog.data?.items.filter((p) => p.line === form.line).map((p) => <option key={p.id} value={p.id}>{p.name} — {p.code}</option>)}</select>
               </div>
               <div className="field">
                 <label className="field-label" htmlFor={`item-qty-${i}`}>
@@ -306,8 +310,7 @@ export function OrderFormDialog({
                 <input
                   id={`item-qty-${i}`}
                   className="input"
-                  type="number"
-                  min={1}
+                  type="text" inputMode="decimal"
                   value={it.qty}
                   onChange={(e) => setItem(i, { qty: e.target.value })}
                   disabled={pending}
@@ -322,8 +325,7 @@ export function OrderFormDialog({
                 <input
                   id={`item-price-${i}`}
                   className="input"
-                  type="number"
-                  min={1}
+                  type="text" inputMode="decimal"
                   value={it.price}
                   onChange={(e) => setItem(i, { price: e.target.value })}
                   disabled={pending}
@@ -338,9 +340,7 @@ export function OrderFormDialog({
                 <input
                   id={`item-discount-${i}`}
                   className="input"
-                  type="number"
-                  min={0}
-                  max={100}
+                  type="text" inputMode="decimal"
                   value={it.discount}
                   onChange={(e) => setItem(i, { discount: e.target.value })}
                   disabled={pending}
@@ -352,13 +352,16 @@ export function OrderFormDialog({
                   <label className="field-label" htmlFor={`item-color-${i}`}>
                     رنگ
                   </label>
-                  <input
+                  <select
                     id={`item-color-${i}`}
-                    className="input"
+                    className="select"
                     value={it.color}
                     onChange={(e) => setItem(i, { color: e.target.value })}
                     disabled={pending}
-                  />
+                  >
+                    <option value="">—</option>
+                    {Array.from(new Set([...(Array.isArray(catalog.data?.items.find((p) => p.id === it.productId)?.colors) ? catalog.data!.items.find((p) => p.id === it.productId)!.colors as string[] : []), ...(it.color ? [it.color] : [])])).map((color) => <option key={color} value={color}>{color}</option>)}
+                  </select>
                 </div>
                 <Button
                   type="button"
@@ -388,9 +391,7 @@ export function OrderFormDialog({
             id="order-discpct"
             name="discPct"
             label="تخفیف کل (٪)"
-            type="number"
-            min={0}
-            max={100}
+            type="text" inputMode="decimal"
             value={form.discPct}
             onChange={(e) => setForm((f) => ({ ...f, discPct: e.target.value }))}
             error={fieldErrors.discPct}
@@ -401,9 +402,7 @@ export function OrderFormDialog({
             id="order-discamt"
             name="discAmt"
             label="مبلغ تخفیف (ریال)"
-            type="number"
-            min={0}
-            step={100000}
+            type="text" inputMode="decimal"
             value={form.discAmt}
             onChange={(e) => setForm((f) => ({ ...f, discAmt: e.target.value }))}
             error={fieldErrors.discAmt}
@@ -414,9 +413,7 @@ export function OrderFormDialog({
             id="order-validdays"
             name="validDays"
             label="اعتبار پیش‌فاکتور (روز)"
-            type="number"
-            min={1}
-            max={365}
+            type="text" inputMode="decimal"
             value={form.validDays}
             onChange={(e) => setForm((f) => ({ ...f, validDays: e.target.value }))}
             error={fieldErrors.validDays}
@@ -430,9 +427,7 @@ export function OrderFormDialog({
             id="order-ship"
             name="ship"
             label="هزینه حمل (ریال)"
-            type="number"
-            min={0}
-            step={100000}
+            type="text" inputMode="decimal"
             value={form.ship}
             onChange={(e) => setForm((f) => ({ ...f, ship: e.target.value }))}
             error={fieldErrors.ship}
@@ -443,9 +438,7 @@ export function OrderFormDialog({
             id="order-install"
             name="install"
             label="هزینه نصب (ریال)"
-            type="number"
-            min={0}
-            step={100000}
+            type="text" inputMode="decimal"
             value={form.install}
             onChange={(e) => setForm((f) => ({ ...f, install: e.target.value }))}
             error={fieldErrors.install}

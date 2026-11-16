@@ -73,6 +73,7 @@ export type BuyCalc = {
 
 /** ردیف لیست خرید — نسخه کامل. */
 export type BuyListItem = {
+  chequeCount?: number;
   id: string;
   status: BuyStatus;
   supplierId: string | null;

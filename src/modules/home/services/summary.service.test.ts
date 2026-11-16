@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@core/database/client", () => ({
   prisma: {
     lead: { count: vi.fn() },
-    order: { count: vi.fn() },
+    order: { count: vi.fn(), groupBy: vi.fn(async () => [{ stage: 3, _count: { _all: 2 } }]) },
     orderCheque: { findMany: vi.fn() },
   },
 }));

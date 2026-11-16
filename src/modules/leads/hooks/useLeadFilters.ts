@@ -13,7 +13,7 @@ export type LeadFilters = {
   q: string;
 };
 
-const DEFAULT_FILTERS: LeadFilters = { line: "prod", stage: "all", q: "" };
+const DEFAULT_FILTERS: LeadFilters = { line: "prod", stage: "raw", q: "" };
 
 /**
  * ذخیره‌سازی فیلترهای بورد سرنخ‌ها در localStorage — CD-09.

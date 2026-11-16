@@ -34,6 +34,7 @@ const tx = {
 };
 vi.mock("@core/database/client", () => ({
   prisma: {
+    job: { findMany: vi.fn(async () => []) },
     material: {
       findMany: vi.fn(async () => [
         { id: "m1", name: "گچ", code: "RM-101", unit: "کیلو", price: 9000, min: 100 },

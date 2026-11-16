@@ -38,6 +38,7 @@ let payloads: Record<string, unknown> = {
   "/api/finance/receivables": { groups: [] },
   "/api/finance/payables": { groups: [] },
   "/api/finance/cashflow": { months: [], rows: [] },
+  "/api/home/summary": { workspace: { now: 1794820000000 } },
 };
 
 function setUser(permissions: string[]): void {
@@ -74,13 +75,13 @@ beforeEach(() => {
 });
 
 describe("FinancePage", () => {
-  it("چهار بخش گزارش وجود دارند", async () => {
+  it("دریافتنی و پرداختنی در تب‌های مجزا هستند", async () => {
     renderPage();
-    expect(screen.getByRole("heading", { name: "مالی", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "سررسیدها و بدهکاری‌ها", level: 1 })).toBeInTheDocument();
     // عنوان بخش‌ها بعد از بارگذاری ظاهر می‌شوند — منتظر اولین بخش می‌مانیم
-    await waitFor(() => expect(screen.getByText("تراکنش‌ها")).toBeInTheDocument());
-    expect(screen.getByText("طلب‌های دریافتی")).toBeInTheDocument();
-    expect(screen.getByText("بدهی‌های پرداختی")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("tab", { name: "دریافتنی‌ها" })).toBeInTheDocument());
+    expect(screen.getByRole("tab", { name: "پرداختنی‌ها" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "بدهکاران" })).toBeInTheDocument();
     expect(screen.getByText("جریان نقدی")).toBeInTheDocument();
   });
 
@@ -96,7 +97,7 @@ describe("FinancePage", () => {
 
   it("نقش بدون finance.edit دکمه ثبت و دیالوگ را ندارد", async () => {
     renderPage(["finance.view", "money.view"]);
-    await waitFor(() => expect(screen.getByText("تراکنش‌ها")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("tab", { name: "دریافتنی‌ها" })).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: "ثبت هزینه / دریافت" })).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

@@ -19,6 +19,7 @@ export function invalidateBuys(
   options?: { stock?: boolean; finance?: boolean },
 ): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.buys.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.home.all });
   if (buyId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.buys.detail(buyId) });
   }

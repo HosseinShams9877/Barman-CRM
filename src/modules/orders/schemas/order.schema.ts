@@ -178,6 +178,9 @@ export const updateOrderSchema = z.object({
 
 /** کوئری لیست سفارش‌ها — فیلتر مرحله/وضعیت/مالک + جستجو + صفحه‌بندی. */
 export const listOrdersQuerySchema = paginationSchema.extend({
+  bucket: z.enum(["pf", "cust", "make", "depot", "deliv", "mine"]).optional(),
+  overdue: z.enum(["0", "1"]).optional().transform((v) => v === "1"),
+  incomplete: z.enum(["0", "1"]).optional().transform((v) => v === "1"),
   stage: orderStageParamSchema.optional(),
   status: orderStatusSchema.optional(),
   ownerId: z.string().trim().min(1).max(64).optional(),

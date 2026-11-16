@@ -93,6 +93,7 @@ function mockApi(): void {
     if (url.startsWith("/api/customers?")) {
       return { items: [ACC], total: 1, page: 1, pageSize: 200 };
     }
+    if (url === "/api/catalog/products") return { items: [{ id: "P1", name: "محصول ۱", code: "P1", line: "prod", price: 1000000, colors: ["سفید"], bom: [] }] };
     if (url === "/api/orders" && init?.method === "POST") {
       if (failMutation) throw new ApiError(400, "BAD_REQUEST", "مبلغ تخفیف از سقف مجاز بیشتر است.");
       return ORDER;
@@ -127,8 +128,9 @@ function renderDialog(
 }
 
 /** پر کردن قلم اول با مقادیر معتبر. */
-function fillItem(): void {
-  fireEvent.change(screen.getByLabelText("شناسه محصول"), { target: { value: "P1" } });
+async function fillItem(): Promise<void> {
+  await screen.findByRole("option", { name: "محصول ۱ — P1" });
+  fireEvent.change(screen.getByLabelText("محصول"), { target: { value: "P1" } });
   fireEvent.change(screen.getByLabelText("تعداد"), { target: { value: "2" } });
   fireEvent.change(screen.getByLabelText("قیمت (ریال)"), { target: { value: "1000000" } });
 }
@@ -157,7 +159,7 @@ describe("ایجاد پیش‌فاکتور", () => {
     const onClose = renderDialog({});
     expect(screen.getByText("پیش‌فاکتور جدید")).toBeInTheDocument();
 
-    fillItem();
+    await fillItem();
     await screen.findByText("شرکت نمونه");
     fireEvent.change(screen.getByLabelText("مشتری (حساب)"), { target: { value: "acc-1" } });
     submitForm();
@@ -189,9 +191,10 @@ describe("ایجاد پیش‌فاکتور", () => {
   it("قلم بدون قیمت → خطای فارسی و عدم ارسال به سرور", async () => {
     renderDialog({});
     await screen.findByText("شرکت نمونه");
-    fireEvent.change(screen.getByLabelText("شناسه محصول"), { target: { value: "P1" } });
+    await screen.findByRole("option", { name: "محصول ۱ — P1" });
+    fireEvent.change(screen.getByLabelText("محصول"), { target: { value: "P1" } });
     fireEvent.change(screen.getByLabelText("تعداد"), { target: { value: "2" } });
-    // قیمت خالی باقی می‌ماند
+    fireEvent.change(screen.getByLabelText("قیمت (ریال)"), { target: { value: "" } });
     submitForm();
 
     expect(await screen.findByText(/نامعتبر/)).toBeInTheDocument();
@@ -204,7 +207,7 @@ describe("ایجاد پیش‌فاکتور", () => {
   it("تخفیف کل بیش از ۱۰۰ → پیام خطای فارسی (CD-28)", async () => {
     renderDialog({});
     await screen.findByText("شرکت نمونه");
-    fillItem();
+    await fillItem();
     fireEvent.change(screen.getByLabelText("تخفیف کل (٪)"), { target: { value: "101" } });
     submitForm();
 
@@ -214,7 +217,7 @@ describe("ایجاد پیش‌فاکتور", () => {
   it("اعتبار پیش‌فاکتور کمتر از ۱ → خطای فارسی", async () => {
     renderDialog({});
     await screen.findByText("شرکت نمونه");
-    fillItem();
+    await fillItem();
     fireEvent.change(screen.getByLabelText("اعتبار پیش‌فاکتور (روز)"), { target: { value: "0" } });
     submitForm();
 
@@ -238,7 +241,7 @@ describe("ایجاد پیش‌فاکتور", () => {
   it("leadId در payload ایجاد قرار می‌گیرد (تبدیل سرنخ)", async () => {
     renderDialog({ leadId: "LD-7" });
     await screen.findByText("شرکت نمونه");
-    fillItem();
+    await fillItem();
     submitForm();
 
     await waitFor(() => expect(lastCall().init.method).toBe("POST"));
@@ -249,7 +252,7 @@ describe("ایجاد پیش‌فاکتور", () => {
     failMutation = true;
     const onClose = renderDialog({});
     await screen.findByText("شرکت نمونه");
-    fillItem();
+    await fillItem();
     submitForm();
 
     expect(await screen.findByText(/سقف مجاز/)).toBeInTheDocument();
@@ -262,9 +265,10 @@ describe("ویرایش پیش‌فاکتور", () => {
     renderDialog({ order: ORDER });
     expect(screen.getByText("ویرایش پیش‌فاکتور PF-1201")).toBeInTheDocument();
     await screen.findByText("شرکت نمونه");
-    expect(screen.getByLabelText("شناسه محصول")).toHaveValue("P1");
-    expect(screen.getByLabelText("تعداد")).toHaveValue(2);
-    expect(screen.getByLabelText("قیمت (ریال)")).toHaveValue(1_000_000);
+    await screen.findByRole("option", { name: "محصول ۱ — P1" });
+    expect(screen.getByLabelText("محصول")).toHaveValue("P1");
+    expect(screen.getByLabelText("تعداد")).toHaveValue("2");
+    expect(screen.getByLabelText("قیمت (ریال)")).toHaveValue("1000000");
     expect(screen.getByLabelText("رنگ")).toHaveValue("سفید");
     expect(screen.getByLabelText("مشتری (حساب)")).toHaveValue("acc-1");
   });

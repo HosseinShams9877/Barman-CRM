@@ -24,6 +24,7 @@ import {
   createOrder,
   effectiveDiscountCap,
   listOrders,
+  getOrder,
   type Actor,
   type OrderListScope,
 } from "./order.service";
@@ -325,6 +326,41 @@ describe("listOrders — فیلتر مالک (pxAll / R-10)", () => {
     pageSize: 20,
   };
 
+  it.each([
+    ["pf", [1, 2, 3]], ["cust", [4, 5]], ["make", [6, 7, 8]],
+    ["depot", [9, 10]], ["deliv", [11]],
+  ] as const)("bucket %s filters before counting and paginating and preserves owner scope", async (bucket, stages) => {
+    await listOrders({ ...PARAMS, bucket, ownerId: "another-user", page: 3 }, { restrictToOwner: true, userId: "u-sales", role: "sales" }, false);
+    const query = p.order.findMany.mock.calls[0]![0];
+    expect(query.where).toMatchObject({ stage: { in: [...stages] }, status: "open", ownerId: "u-sales" });
+    expect(p.order.count.mock.calls[0]![0].where).toEqual(query.where);
+    expect(query).toMatchObject({ skip: 40, take: 20 });
+  });
+
+  it("mine uses the role's action queues before pagination", async () => {
+    p.order.findMany.mockResolvedValueOnce([row({ id: "PF-6", stage: 6 }), row({ id: "PF-8", stage: 8 }), row({ id: "PF-5", stage: 5 })]).mockResolvedValueOnce([]);
+    await listOrders({ ...PARAMS, bucket: "mine", page: 2 }, { restrictToOwner: false, userId: "u-prod", role: "production" }, true);
+    const candidates = p.order.findMany.mock.calls[0]![0];
+    expect(candidates).not.toHaveProperty("skip");
+    const query = p.order.findMany.mock.calls[1]![0];
+    expect(query.where).toMatchObject({ status: "open", id: { in: ["PF-6", "PF-8"] } });
+    expect(query.skip).toBe(20);
+    expect(p.order.count.mock.calls[0]![0].where).toEqual(query.where);
+  });
+
+  it("incomplete selects only confirmed orders with genuinely incomplete cheque data", async () => {
+    const complete = { sayad: "1234567890123456", bank: "بانک", owner: "مالک", due: "1405/09/01" };
+    p.order.findMany.mockResolvedValueOnce([
+      row({ id: "PF-incomplete", stage: 6, cheques: [{ ...complete, sayad: "1234567890123456x" }] }),
+      row({ id: "PF-draft", stage: 1, cheques: [{ ...complete, bank: "" }] }),
+      row({ id: "PF-complete", stage: 7, cheques: [complete] }),
+    ]).mockResolvedValueOnce([]);
+    await listOrders({ ...PARAMS, incomplete: true }, { restrictToOwner: true, userId: "u-sales", role: "sales" }, false);
+    const query = p.order.findMany.mock.calls[1]![0];
+    expect(query.where).toMatchObject({ status: "open", ownerId: "u-sales", id: { in: ["PF-incomplete"] } });
+    expect(p.order.count.mock.calls[0]![0].where).toEqual(query.where);
+  });
+
   it("کاربر عادی فقط سفارش‌های خودش را می‌بیند", async () => {
     const scope: OrderListScope = { restrictToOwner: true, userId: "u-sales" };
     await listOrders(PARAMS, scope, false);
@@ -368,6 +404,24 @@ describe("listOrders — فیلتر مالک (pxAll / R-10)", () => {
     expect(item.paid).toBeUndefined();
     expect(item.balance).toBeUndefined();
     expect(item.discPct).toBeUndefined();
+  });
+});
+
+describe("getOrder nested noMoney filtering", () => {
+  it("removes amounts from payments and cheques as well as item prices", async () => {
+    p.order.findUnique.mockResolvedValue(row({
+      payments: [{ id: "pay-1", amount: 900, kind: "cash", date: "1405/08/25", void: false, note: "", createdAt: 1, by: { name: "مالی" } }],
+      cheques: [{ id: "chq-1", amount: 800, sayad: "1234567890123456", due: "1405/09/01", status: "hand", bank: "بانک", owner: "مالک", note: "", createdAt: 1, updatedAt: 1 }],
+    }));
+    const hidden = await getOrder("PF-1201", true);
+    expect(hidden.items[0]).not.toHaveProperty("price");
+    expect(hidden.items[0]).not.toHaveProperty("discount");
+    expect(hidden.payments[0]).not.toHaveProperty("amount");
+    expect(hidden.cheques[0]).not.toHaveProperty("amount");
+    expect(hidden.cheques[0]).toMatchObject({ sayad: "1234567890123456", status: "hand" });
+    const visible = await getOrder("PF-1201", false);
+    expect(visible.payments[0]).toHaveProperty("amount", 900);
+    expect(visible.cheques[0]).toHaveProperty("amount", 800);
   });
 });
 
